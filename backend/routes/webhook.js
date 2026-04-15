@@ -7,6 +7,18 @@ const User = require("../models/User");
 const Product = require("../models/Product");
 
 
+// Helper to create a URL-friendly slug from company name
+function slugify(text) {
+    return text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-') // Replace spaces with -
+        .replace(/[^a-z0-9\-]/g, '') // Remove all non-alphanumeric except -
+        .replace(/-+/g, '-') // Replace multiple - with single -
+        .replace(/^-+|-+$/g, ''); // Trim - from start/end
+}
+
 // Bilingual prompts
 const prompts = {
     en: {
@@ -20,7 +32,7 @@ const prompts = {
         enterValidPrice: "Enter valid price:",
         sendImageOrSkip: "Send image or type SKIP",
         productAdded: "✅ Product added!\n1. Add another\n2. View store",
-        viewStore: (from) => `https://yourapp.com/store/${from}`,
+        viewStore: (slug) => `https://yourapp.com/store/${slug}`,
         replyHi: "Reply Hi to start"
     },
     ha: {
@@ -34,7 +46,7 @@ const prompts = {
         enterValidPrice: "Shigar da sahihin farashi:",
         sendImageOrSkip: "Aika hoto ko rubuta SKIP",
         productAdded: "✅ An ƙara kaya!\n1. Ƙara wani\n2. Duba shago",
-        viewStore: (from) => `https://yourapp.com/store/${from}`,
+        viewStore: (slug) => `https://yourapp.com/store/${slug}`,
         replyHi: "Amsa da Hi don farawa"
     }
 };
@@ -90,6 +102,14 @@ router.post("/", async(req, res) => {
     // Registration: company name
     if (user.state === "register_company") {
         user.companyName = msg;
+        // Generate slug and ensure uniqueness
+        let baseSlug = slugify(msg);
+        let slug = baseSlug;
+        let i = 1;
+        while (await User.findOne({ slug })) {
+            slug = `${baseSlug}-${i++}`;
+        }
+        user.slug = slug;
         user.state = "register_address";
         await user.save();
         twiml.message(prompts[user.language].askAddress);
@@ -162,7 +182,9 @@ router.post("/", async(req, res) => {
     }
 
     if (msg === "2") {
-        twiml.message(t.viewStore(from));
+        // Use slug for store link if available, else fallback to phone
+        const storeLink = user.slug ? t.viewStore(user.slug) : t.viewStore(from);
+        twiml.message(storeLink);
         return res.type("text/xml").send(twiml.toString());
     }
 

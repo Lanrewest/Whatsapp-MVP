@@ -5,6 +5,7 @@ const UserSchema = new mongoose.Schema({
     state: { type: String, default: "idle" },
     language: { type: String, enum: ["en", "ha"], default: "en" },
     companyName: { type: String },
+    slug: { type: String, unique: true, sparse: true },
     address: { type: String },
     currentProduct: {
         name: String,

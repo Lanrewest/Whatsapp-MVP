@@ -19,9 +19,26 @@ mongoose.connect(process.env.MONGO_URI)
 app.use("/api/webhook", webhook);
 
 
-app.get("/api/products/:phone", async(req, res) => {
-    const products = await Product.find({ traderPhone: req.params.phone });
+
+// Get products by phone or slug
+app.get("/api/products/:key", async(req, res) => {
+    let user = await User.findOne({ phone: req.params.key });
+    if (!user) {
+        user = await User.findOne({ slug: req.params.key });
+    }
+    if (!user) return res.json([]);
+    const products = await Product.find({ traderPhone: user.phone });
     res.json(products);
+});
+
+// Get trader info by slug
+app.get("/api/trader/:slug", async(req, res) => {
+    const user = await User.findOne({ slug: req.params.slug });
+    if (!user) return res.status(404).json({ error: "Trader not found" });
+    res.json({
+        companyName: user.companyName,
+        address: user.address
+    });
 });
 
 // Customer request endpoint
