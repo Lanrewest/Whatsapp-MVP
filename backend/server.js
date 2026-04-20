@@ -2,6 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
+const cors = require("cors");
+
 
 const webhook = require("./routes/webhook");
 const Product = require("./models/Product");
@@ -9,6 +11,7 @@ const User = require("./models/User");
 const twilio = require("twilio");
 
 const app = express();
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -31,14 +34,14 @@ app.get("/api/products/:key", async(req, res) => {
     res.json(products);
 });
 
-// Get trader info by slug
-app.get("/api/trader/:slug", async(req, res) => {
-    const user = await User.findOne({ slug: req.params.slug });
+// Get trader info by phone or slug
+app.get("/api/trader/:key", async(req, res) => {
+    let user = await User.findOne({ phone: req.params.key });
+    if (!user) {
+        user = await User.findOne({ slug: req.params.key });
+    }
     if (!user) return res.status(404).json({ error: "Trader not found" });
-    res.json({
-        companyName: user.companyName,
-        address: user.address
-    });
+    res.json(user);
 });
 
 // Customer request endpoint
@@ -68,4 +71,5 @@ app.post("/api/request", async(req, res) => {
     }
 });
 
-app.listen(process.env.PORT, () => console.log("Server running"));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

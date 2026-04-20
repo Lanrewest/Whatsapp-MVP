@@ -17,7 +17,8 @@ export default function App() {
         /> <
         Route path = "*"
         element = { < LandingPage / > }
-        /> < /
-        Routes > < /BrowserRouter>
+        /> <
+        /Routes> <
+        /BrowserRouter>
     );
 }
