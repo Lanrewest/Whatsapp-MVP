@@ -17,24 +17,8 @@ export default function App() {
         /> <
         Route path = "*"
         element = { < LandingPage / > }
-        /> < /
-        Routes > <
+        /> <
+        /Routes> <
         /BrowserRouter>
-        return ( <
-            BrowserRouter >
-            <
-            Routes >
-            <
-            Route path = "/store/:phone"
-            element = { < Store / > }
-            /> <
-            Route path = "/"
-            element = { < LandingPage / > }
-            /> <
-            Route path = "*"
-            element = { < LandingPage / > }
-            /> <
-            /Routes> <
-            /BrowserRouter>
-        );
-    }
+    );
+}
