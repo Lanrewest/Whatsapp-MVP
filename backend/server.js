@@ -10,6 +10,21 @@ const Product = require("./models/Product");
 const User = require("./models/User");
 const twilio = require("twilio");
 
+// Security Check: Ensure all required environment variables are loaded
+const requiredEnvs = [
+    "MONGO_URI",
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_WHATSAPP_NUMBER",
+    "CLOUDINARY_URL"
+];
+requiredEnvs.forEach((env) => {
+    if (!process.env[env]) {
+        console.error(`ERROR: Missing required environment variable: ${env}`);
+        process.exit(1);
+    }
+});
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
