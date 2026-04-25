@@ -52,145 +52,155 @@ const prompts = {
 };
 
 router.post("/", async(req, res) => {
-    const msg = (req.body.Body || "").trim();
-    const from = (req.body.From || "").replace("whatsapp:", "");
-    const numMedia = parseInt(req.body.NumMedia || "0", 10);
-    const mediaUrl = numMedia > 0 ? req.body.MediaUrl0 : null;
-
-    let user = await User.findOne({ phone: from });
-    if (!user) {
-        user = await User.create({ phone: from, state: "select_language", currentProduct: {} });
-    }
-
-    // Use user's language or default to English
-    const lang = user.language || "en";
-    const t = prompts[lang];
     const twiml = new MessagingResponse();
+    try {
+        const msg = (req.body.Body || "").trim();
+        const from = (req.body.From || "").replace("whatsapp:", "");
+        const numMedia = parseInt(req.body.NumMedia || "0", 10);
+        const mediaUrl = numMedia > 0 ? req.body.MediaUrl0 : null;
 
-    // Language selection
-    if (user.state === "select_language" || /^hi$/i.test(msg)) {
-        if (/^hi$/i.test(msg)) {
-            user.state = "select_language";
-            await user.save();
+        console.log(`Received message from ${from}: ${msg}`);
+
+        let user = await User.findOne({ phone: from });
+        if (!user) {
+            console.log(`New user detected: ${from}`);
+            user = await User.create({ phone: from, state: "select_language", currentProduct: {} });
         }
-        twiml.message(prompts.en.welcome); // Always show both languages for selection
-        user.state = "awaiting_language";
-        await user.save();
-        return res.type("text/xml").send(twiml.toString());
-    }
 
-    // Awaiting language selection
-    if (user.state === "awaiting_language") {
+        // Use user's language or default to English
+        const lang = user.language || "en";
+        const t = prompts[lang];
+
+        // Language selection
+        if (user.state === "select_language" || /^hi$/i.test(msg)) {
+            if (/^hi$/i.test(msg)) {
+                user.state = "select_language";
+                await user.save();
+            }
+            twiml.message(prompts.en.welcome); // Always show both languages for selection
+            user.state = "awaiting_language";
+            await user.save();
+            return res.type("text/xml").send(twiml.toString());
+        }
+
+        // Awaiting language selection
+        if (user.state === "awaiting_language") {
+            if (msg === "1") {
+                user.language = "en";
+                user.state = "register_company";
+                await user.save();
+                twiml.message(prompts.en.askCompany);
+                return res.type("text/xml").send(twiml.toString());
+            } else if (msg === "2") {
+                user.language = "ha";
+                user.state = "register_company";
+                await user.save();
+                twiml.message(prompts.ha.askCompany);
+                return res.type("text/xml").send(twiml.toString());
+            } else {
+                twiml.message(prompts.en.welcome);
+                return res.type("text/xml").send(twiml.toString());
+            }
+        }
+
+        // Registration: company name
+        if (user.state === "register_company") {
+            user.companyName = msg;
+            // Generate slug and ensure uniqueness
+            let baseSlug = slugify(msg);
+            let slug = baseSlug;
+            let i = 1;
+            while (await User.findOne({ slug })) {
+                slug = `${baseSlug}-${i++}`;
+            }
+            user.slug = slug;
+            user.state = "register_address";
+            await user.save();
+            twiml.message(prompts[user.language].askAddress);
+            return res.type("text/xml").send(twiml.toString());
+        }
+
+        // Registration: address
+        if (user.state === "register_address") {
+            user.address = msg;
+            user.state = "idle";
+            await user.save();
+            twiml.message(prompts[user.language].registrationComplete + "\n" + prompts[user.language].addProduct);
+            return res.type("text/xml").send(twiml.toString());
+        }
+
+        // Add Product flow (bilingual)
         if (msg === "1") {
-            user.language = "en";
-            user.state = "register_company";
+            user.state = "adding_name";
             await user.save();
-            twiml.message(prompts.en.askCompany);
+            twiml.message(t.enterProductName);
             return res.type("text/xml").send(twiml.toString());
-        } else if (msg === "2") {
-            user.language = "ha";
-            user.state = "register_company";
+        }
+
+        if (user.state === "adding_name") {
+            user.currentProduct.name = msg;
+            user.state = "adding_price";
             await user.save();
-            twiml.message(prompts.ha.askCompany);
-            return res.type("text/xml").send(twiml.toString());
-        } else {
-            twiml.message(prompts.en.welcome);
+            twiml.message(t.enterPrice);
             return res.type("text/xml").send(twiml.toString());
         }
-    }
 
-    // Registration: company name
-    if (user.state === "register_company") {
-        user.companyName = msg;
-        // Generate slug and ensure uniqueness
-        let baseSlug = slugify(msg);
-        let slug = baseSlug;
-        let i = 1;
-        while (await User.findOne({ slug })) {
-            slug = `${baseSlug}-${i++}`;
+        if (user.state === "adding_price") {
+            const price = Number(msg);
+            if (isNaN(price)) {
+                twiml.message(t.enterValidPrice);
+                return res.type("text/xml").send(twiml.toString());
+            } else {
+                user.currentProduct.price = price;
+                user.state = "adding_image";
+                await user.save();
+                twiml.message(t.sendImageOrSkip);
+                return res.type("text/xml").send(twiml.toString());
+            }
         }
-        user.slug = slug;
-        user.state = "register_address";
-        await user.save();
-        twiml.message(prompts[user.language].askAddress);
-        return res.type("text/xml").send(twiml.toString());
-    }
 
-    // Registration: address
-    if (user.state === "register_address") {
-        user.address = msg;
-        user.state = "idle";
-        await user.save();
-        twiml.message(prompts[user.language].registrationComplete + "\n" + prompts[user.language].addProduct);
-        return res.type("text/xml").send(twiml.toString());
-    }
+        if (user.state === "adding_image") {
+            let imageUrl = "";
+            if (msg.toUpperCase() === "SKIP") {
+                imageUrl = "";
+            } else if (mediaUrl) {
+                imageUrl = mediaUrl;
+            } else {
+                twiml.message(t.sendImageOrSkip);
+                return res.type("text/xml").send(twiml.toString());
+            }
 
-    // Add Product flow (bilingual)
-    if (msg === "1") {
-        user.state = "adding_name";
-        await user.save();
-        twiml.message(t.enterProductName);
-        return res.type("text/xml").send(twiml.toString());
-    }
+            await Product.create({
+                traderPhone: from,
+                name: user.currentProduct.name,
+                price: user.currentProduct.price,
+                imageUrl
+            });
 
-    if (user.state === "adding_name") {
-        user.currentProduct.name = msg;
-        user.state = "adding_price";
-        await user.save();
-        twiml.message(t.enterPrice);
-        return res.type("text/xml").send(twiml.toString());
-    }
-
-    if (user.state === "adding_price") {
-        const price = Number(msg);
-        if (isNaN(price)) {
-            twiml.message(t.enterValidPrice);
-            return res.type("text/xml").send(twiml.toString());
-        } else {
-            user.currentProduct.price = price;
-            user.state = "adding_image";
+            user.state = "idle";
+            user.currentProduct = {};
             await user.save();
-            twiml.message(t.sendImageOrSkip);
-            return res.type("text/xml").send(twiml.toString());
-        }
-    }
 
-    if (user.state === "adding_image") {
-        let imageUrl = "";
-        if (msg.toUpperCase() === "SKIP") {
-            imageUrl = "";
-        } else if (mediaUrl) {
-            imageUrl = mediaUrl;
-        } else {
-            twiml.message(t.sendImageOrSkip);
+            twiml.message(t.productAdded);
             return res.type("text/xml").send(twiml.toString());
         }
 
-        await Product.create({
-            traderPhone: from,
-            name: user.currentProduct.name,
-            price: user.currentProduct.price,
-            imageUrl
-        });
+        if (msg === "2") {
+            // Use slug for store link if available, else fallback to phone
+            const storeLink = user.slug ? t.viewStore(user.slug) : t.viewStore(from);
+            twiml.message(storeLink);
+            return res.type("text/xml").send(twiml.toString());
+        }
 
-        user.state = "idle";
-        user.currentProduct = {};
-        await user.save();
+        // Default fallback
+        twiml.message(t.replyHi);
+        return res.type("text/xml").send(twiml.toString());
 
-        twiml.message(t.productAdded);
+    } catch (error) {
+        console.error("Webhook Error:", error);
+        twiml.message("Sorry, an error occurred. Please try again later.");
         return res.type("text/xml").send(twiml.toString());
     }
-
-    if (msg === "2") {
-        // Use slug for store link if available, else fallback to phone
-        const storeLink = user.slug ? t.viewStore(user.slug) : t.viewStore(from);
-        twiml.message(storeLink);
-        return res.type("text/xml").send(twiml.toString());
-    }
-
-    // Default fallback
-    twiml.message(t.replyHi);
-    return res.type("text/xml").send(twiml.toString());
 });
 
 module.exports = router;
