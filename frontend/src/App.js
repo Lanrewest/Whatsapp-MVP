@@ -9,7 +9,7 @@ export default function App() {
         <
         Routes >
         <
-        Route path = "/store/:phone"
+        Route path = "/store/:slug"
         element = { < Store / > }
         /> <
         Route path = "/"
