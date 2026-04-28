@@ -16,7 +16,8 @@ const requiredEnvs = [
     "TWILIO_ACCOUNT_SID",
     "TWILIO_AUTH_TOKEN",
     "TWILIO_WHATSAPP_NUMBER",
-    "CLOUDINARY_URL"
+    "CLOUDINARY_URL",
+    "FRONTEND_URL"
 ];
 requiredEnvs.forEach((env) => {
     if (!process.env[env]) {
@@ -26,13 +27,19 @@ requiredEnvs.forEach((env) => {
 });
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || "https://arewa-market.vercel.app"
+}));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB connected"));
 
+// Root route to confirm server status
+app.get("/", (req, res) => {
+    res.send("ArewaMarket Backend Server is running!");
+});
 
 app.use("/api/webhook", webhook);
 

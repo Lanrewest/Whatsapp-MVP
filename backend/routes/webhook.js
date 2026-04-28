@@ -32,7 +32,7 @@ const prompts = {
         enterValidPrice: "Enter valid price:",
         sendImageOrSkip: "Send image or type SKIP",
         productAdded: "✅ Product added!\n1. Add another\n2. View store",
-        viewStore: (slug) => `https://yourapp.com/store/${slug}`,
+        viewStore: (slug) => `${process.env.FRONTEND_URL || 'https://arewa-market.vercel.app'}/store/${slug}`,
         replyHi: "Reply Hi to start"
     },
     ha: {
@@ -46,7 +46,7 @@ const prompts = {
         enterValidPrice: "Shigar da sahihin farashi:",
         sendImageOrSkip: "Aika hoto ko rubuta SKIP",
         productAdded: "✅ An ƙara kaya!\n1. Ƙara wani\n2. Duba shago",
-        viewStore: (slug) => `https://yourapp.com/store/${slug}`,
+        viewStore: (slug) => `${process.env.FRONTEND_URL || 'https://arewa-market.vercel.app'}/store/${slug}`,
         replyHi: "Amsa da Hi don farawa"
     }
 };
