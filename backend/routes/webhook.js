@@ -33,7 +33,13 @@ const prompts = {
         sendImageOrSkip: "Send image or type SKIP",
         productAdded: "✅ Product added!\n1. Add another\n2. View store",
         viewStore: (slug) => `${process.env.FRONTEND_URL || 'https://arewa-market.vercel.app'}/store/${slug}`,
-        replyHi: "Reply Hi to start"
+        replyHi: "Reply Hi to start",
+        welcomeBack: (name) => `Welcome back, ${name}! What would you like to do?`,
+        mainMenu: "1. Add Product\n2. View My Store\n3. Update Address\n4. Delete Product",
+        askNewAddress: "Please enter your new company address:",
+        addressUpdated: "✅ Address updated successfully!",
+        askDeleteProduct: "Enter the exact name of the product you want to delete:",
+        productDeleted: "🗑️ Product deleted successfully."
     },
     ha: {
         welcome: "Barka da zuwa ArewaMarket! Da fatan za a zaɓi yaren ku:\n1. Turanci\n2. Hausa",
@@ -47,7 +53,13 @@ const prompts = {
         sendImageOrSkip: "Aika hoto ko rubuta SKIP",
         productAdded: "✅ An ƙara kaya!\n1. Ƙara wani\n2. Duba shago",
         viewStore: (slug) => `${process.env.FRONTEND_URL || 'https://arewa-market.vercel.app'}/store/${slug}`,
-        replyHi: "Amsa da Hi don farawa"
+        replyHi: "Amsa da Hi don farawa",
+        welcomeBack: (name) => `Barka da dawowa, ${name}! Me kake son yi?`,
+        mainMenu: "1. Ƙara Kaya\n2. Duba Shagona\n3. Gyara Adireshin Kamfani\n4. Goge Kaya",
+        askNewAddress: "Da fatan za a shigar da sabon adireshin kamfani:",
+        addressUpdated: "✅ An gyara adireshin kamfani cikin nasara!",
+        askDeleteProduct: "Shigar da ainihin sunan kayan da kake son gogewa:",
+        productDeleted: "🗑️ An goge kayan cikin nasara."
     }
 };
 
@@ -72,11 +84,16 @@ router.post("/", async(req, res) => {
         const t = prompts[lang];
 
         // Language selection
-        if (user.state === "select_language" || /^hi$/i.test(msg)) {
-            if (/^hi$/i.test(msg)) {
-                user.state = "select_language";
+        if (/^hi$/i.test(msg)) {
+            if (user.companyName) {
+                // Registered user menu
+                user.state = "main_menu";
                 await user.save();
+                twiml.message(`${t.welcomeBack(user.companyName)}\n${t.mainMenu}`);
+                return res.type("text/xml").send(twiml.toString());
             }
+            
+            user.state = "select_language";
             twiml.message(prompts.en.welcome); // Always show both languages for selection
             user.state = "awaiting_language";
             await user.save();
@@ -189,6 +206,43 @@ router.post("/", async(req, res) => {
             // Use slug for store link if available, else fallback to phone
             const storeLink = user.slug ? t.viewStore(user.slug) : t.viewStore(from);
             twiml.message(storeLink);
+            return res.type("text/xml").send(twiml.toString());
+        }
+
+        // New Menu Options
+        if (msg === "3") {
+            user.state = "updating_address";
+            await user.save();
+            twiml.message(t.askNewAddress);
+            return res.type("text/xml").send(twiml.toString());
+        }
+
+        if (user.state === "updating_address") {
+            user.address = msg;
+            user.state = "idle";
+            await user.save();
+            twiml.message(t.addressUpdated + "\n" + t.mainMenu);
+            return res.type("text/xml").send(twiml.toString());
+        }
+
+        if (msg === "4") {
+            user.state = "deleting_product";
+            await user.save();
+            twiml.message(t.askDeleteProduct);
+            return res.type("text/xml").send(twiml.toString());
+        }
+
+        if (user.state === "deleting_product") {
+            const result = await Product.findOneAndDelete({ 
+                traderPhone: from, 
+                name: { $regex: new RegExp(`^${msg}$`, "i") } 
+            });
+            
+            user.state = "idle";
+            await user.save();
+            
+            const feedback = result ? t.productDeleted : (lang === "en" ? "Product not found." : "Ba a sami kaya ba.");
+            twiml.message(feedback + "\n" + t.mainMenu);
             return res.type("text/xml").send(twiml.toString());
         }
 
