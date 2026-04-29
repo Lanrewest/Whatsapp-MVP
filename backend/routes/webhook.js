@@ -92,7 +92,7 @@ router.post("/", async(req, res) => {
                 twiml.message(`${t.welcomeBack(user.companyName)}\n${t.mainMenu}`);
                 return res.type("text/xml").send(twiml.toString());
             }
-            
+
             user.state = "select_language";
             twiml.message(prompts.en.welcome); // Always show both languages for selection
             user.state = "awaiting_language";
@@ -233,14 +233,14 @@ router.post("/", async(req, res) => {
         }
 
         if (user.state === "deleting_product") {
-            const result = await Product.findOneAndDelete({ 
-                traderPhone: from, 
-                name: { $regex: new RegExp(`^${msg}$`, "i") } 
+            const result = await Product.findOneAndDelete({
+                traderPhone: from,
+                name: { $regex: new RegExp(`^${msg}$`, "i") }
             });
-            
+
             user.state = "idle";
             await user.save();
-            
+
             const feedback = result ? t.productDeleted : (lang === "en" ? "Product not found." : "Ba a sami kaya ba.");
             twiml.message(feedback + "\n" + t.mainMenu);
             return res.type("text/xml").send(twiml.toString());
