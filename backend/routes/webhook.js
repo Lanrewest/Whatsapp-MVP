@@ -76,7 +76,12 @@ router.post("/", async(req, res) => {
         let user = await User.findOne({ phone: from });
         if (!user) {
             console.log(`New user detected: ${from}`);
-            user = await User.create({ phone: from, state: "select_language", currentProduct: {} });
+            user = await User.create({
+                phone: from,
+                state: "awaiting_language",
+                language: "en",
+                currentProduct: { name: "", price: 0 }
+            });
         }
 
         // Use user's language or default to English
@@ -93,9 +98,8 @@ router.post("/", async(req, res) => {
                 return res.type("text/xml").send(twiml.toString());
             }
 
-            user.state = "select_language";
-            twiml.message(prompts.en.welcome); // Always show both languages for selection
             user.state = "awaiting_language";
+            twiml.message(prompts.en.welcome); // Always show both languages for selection
             await user.save();
             return res.type("text/xml").send(twiml.toString());
         }
