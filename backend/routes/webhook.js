@@ -6,17 +6,16 @@ const MessagingResponse = twilio.twiml.MessagingResponse;
 const User = require("../models/User");
 const Product = require("../models/Product");
 
-
 // Helper to create a URL-friendly slug from company name
 function slugify(text) {
     return text
         .toString()
         .toLowerCase()
         .trim()
-        .replace(/\s+/g, '-') // Replace spaces with -
-        .replace(/[^a-z0-9\-]/g, '') // Remove all non-alphanumeric except -
-        .replace(/-+/g, '-') // Replace multiple - with single -
-        .replace(/^-+|-+$/g, ''); // Trim - from start/end
+        .replace(/\s+/g, "-") // Replace spaces with -
+        .replace(/[^a-z0-9\-]/g, "") // Remove all non-alphanumeric except -
+        .replace(/-+/g, "-") // Replace multiple - with single -
+        .replace(/^-+|-+$/g, ""); // Trim - from start/end
 }
 
 // Bilingual prompts
@@ -32,14 +31,15 @@ const prompts = {
         enterValidPrice: "Enter valid price:",
         sendImageOrSkip: "Send image or type SKIP",
         productAdded: "✅ Product added!\n1. Add another\n2. View store",
-        viewStore: (slug) => `${process.env.FRONTEND_URL || 'https://arewa-market.vercel.app'}/store/${slug}`,
+        viewStore: (slug) =>
+            `${process.env.FRONTEND_URL || "https://arewa-market.vercel.app"}/store/${slug}`,
         replyHi: "Reply Hi to start",
         welcomeBack: (name) => `Welcome back, ${name}! What would you like to do?`,
         mainMenu: "1. Add Product\n2. View My Store\n3. Update Address\n4. Delete Product",
         askNewAddress: "Please enter your new company address:",
         addressUpdated: "✅ Address updated successfully!",
         askDeleteProduct: "Enter the exact name of the product you want to delete:",
-        productDeleted: "🗑️ Product deleted successfully."
+        productDeleted: "🗑️ Product deleted successfully.",
     },
     ha: {
         welcome: "Barka da zuwa ArewaMarket! Da fatan za a zaɓi yaren ku:\n1. Turanci\n2. Hausa",
@@ -52,15 +52,16 @@ const prompts = {
         enterValidPrice: "Shigar da sahihin farashi:",
         sendImageOrSkip: "Aika hoto ko rubuta SKIP",
         productAdded: "✅ An ƙara kaya!\n1. Ƙara wani\n2. Duba shago",
-        viewStore: (slug) => `${process.env.FRONTEND_URL || 'https://arewa-market.vercel.app'}/store/${slug}`,
+        viewStore: (slug) =>
+            `${process.env.FRONTEND_URL || "https://arewa-market.vercel.app"}/store/${slug}`,
         replyHi: "Amsa da Hi don farawa",
         welcomeBack: (name) => `Barka da dawowa, ${name}! Me kake son yi?`,
         mainMenu: "1. Ƙara Kaya\n2. Duba Shagona\n3. Gyara Adireshin Kamfani\n4. Goge Kaya",
         askNewAddress: "Da fatan za a shigar da sabon adireshin kamfani:",
         addressUpdated: "✅ An gyara adireshin kamfani cikin nasara!",
         askDeleteProduct: "Shigar da ainihin sunan kayan da kake son gogewa:",
-        productDeleted: "🗑️ An goge kayan cikin nasara."
-    }
+        productDeleted: "🗑️ An goge kayan cikin nasara.",
+    },
 };
 
 router.post("/", async(req, res) => {
@@ -80,7 +81,7 @@ router.post("/", async(req, res) => {
                 phone: from,
                 state: "awaiting_language",
                 language: "en",
-                currentProduct: { name: "", price: 0 }
+                currentProduct: { name: "", price: 0 },
             });
         }
 
@@ -89,7 +90,7 @@ router.post("/", async(req, res) => {
         const t = prompts[lang];
 
         // Language selection
-        if (/^hi$/i.test(msg)) {
+        if (/^hi|start|join|market/i.test(msg)) {
             if (user.companyName) {
                 // Registered user menu
                 user.state = "main_menu";
@@ -146,114 +147,110 @@ router.post("/", async(req, res) => {
             user.address = msg;
             user.state = "idle";
             await user.save();
-            twiml.message(prompts[user.language].registrationComplete + "\n" + prompts[user.language].addProduct);
+            twiml.message(
+                prompts[user.language].registrationComplete +
+                "\n" +
+                prompts[user.language].addProduct,
+            );
             return res.type("text/xml").send(twiml.toString());
         }
 
-        // Add Product flow (bilingual)
-        if (msg === "1") {
-            user.state = "adding_name";
-            await user.save();
-            twiml.message(t.enterProductName);
-            return res.type("text/xml").send(twiml.toString());
-        }
+        // State Machine to prevent numeric collision
+        switch (user.state) {
+            case "idle":
+            case "main_menu":
+                if (msg === "1") {
+                    user.state = "adding_name";
+                    await user.save();
+                    twiml.message(t.enterProductName);
+                    return res.type("text/xml").send(twiml.toString());
+                } else if (msg === "2") {
+                    const storeLink = user.slug ?
+                        t.viewStore(user.slug) :
+                        t.viewStore(from);
+                    twiml.message(storeLink);
+                    return res.type("text/xml").send(twiml.toString());
+                } else if (msg === "3") {
+                    user.state = "updating_address";
+                    await user.save();
+                    twiml.message(t.askNewAddress);
+                    return res.type("text/xml").send(twiml.toString());
+                } else if (msg === "4") {
+                    user.state = "deleting_product";
+                    await user.save();
+                    twiml.message(t.askDeleteProduct);
+                    return res.type("text/xml").send(twiml.toString());
+                }
+                break;
 
-        if (user.state === "adding_name") {
-            user.currentProduct.name = msg;
-            user.state = "adding_price";
-            await user.save();
-            twiml.message(t.enterPrice);
-            return res.type("text/xml").send(twiml.toString());
-        }
-
-        if (user.state === "adding_price") {
-            const price = Number(msg);
-            if (isNaN(price)) {
-                twiml.message(t.enterValidPrice);
-                return res.type("text/xml").send(twiml.toString());
-            } else {
-                user.currentProduct.price = price;
-                user.state = "adding_image";
+            case "adding_name":
+                user.currentProduct.name = msg;
+                user.state = "adding_price";
                 await user.save();
-                twiml.message(t.sendImageOrSkip);
+                twiml.message(t.enterPrice);
                 return res.type("text/xml").send(twiml.toString());
-            }
-        }
 
-        if (user.state === "adding_image") {
-            let imageUrl = "";
-            if (msg.toUpperCase() === "SKIP") {
-                imageUrl = "";
-            } else if (mediaUrl) {
-                imageUrl = mediaUrl;
-            } else {
-                twiml.message(t.sendImageOrSkip);
+            case "adding_price":
+                const price = Number(msg);
+                if (isNaN(price)) {
+                    twiml.message(t.enterValidPrice);
+                    return res.type("text/xml").send(twiml.toString());
+                } else {
+                    user.currentProduct.price = price;
+                    user.state = "adding_image";
+                    await user.save();
+                    twiml.message(t.sendImageOrSkip);
+                    return res.type("text/xml").send(twiml.toString());
+                }
+
+            case "adding_image":
+                let imageUrl = "";
+                if (msg.toUpperCase() === "SKIP") {
+                    imageUrl = "";
+                } else if (mediaUrl) {
+                    imageUrl = mediaUrl;
+                } else {
+                    twiml.message(t.sendImageOrSkip);
+                    return res.type("text/xml").send(twiml.toString());
+                }
+                await Product.create({
+                    traderPhone: from,
+                    name: user.currentProduct.name,
+                    price: user.currentProduct.price,
+                    imageUrl,
+                });
+                user.state = "main_menu";
+                user.currentProduct = { name: "", price: 0 };
+                await user.save();
+                twiml.message(t.productAdded + "\n" + t.mainMenu);
                 return res.type("text/xml").send(twiml.toString());
-            }
 
-            await Product.create({
-                traderPhone: from,
-                name: user.currentProduct.name,
-                price: user.currentProduct.price,
-                imageUrl
-            });
+            case "updating_address":
+                user.address = msg;
+                user.state = "main_menu";
+                await user.save();
+                twiml.message(t.addressUpdated + "\n" + t.mainMenu);
+                return res.type("text/xml").send(twiml.toString());
 
-            user.state = "idle";
-            user.currentProduct = {};
-            await user.save();
-
-            twiml.message(t.productAdded);
-            return res.type("text/xml").send(twiml.toString());
-        }
-
-        if (msg === "2") {
-            // Use slug for store link if available, else fallback to phone
-            const storeLink = user.slug ? t.viewStore(user.slug) : t.viewStore(from);
-            twiml.message(storeLink);
-            return res.type("text/xml").send(twiml.toString());
-        }
-
-        // New Menu Options
-        if (msg === "3") {
-            user.state = "updating_address";
-            await user.save();
-            twiml.message(t.askNewAddress);
-            return res.type("text/xml").send(twiml.toString());
-        }
-
-        if (user.state === "updating_address") {
-            user.address = msg;
-            user.state = "idle";
-            await user.save();
-            twiml.message(t.addressUpdated + "\n" + t.mainMenu);
-            return res.type("text/xml").send(twiml.toString());
-        }
-
-        if (msg === "4") {
-            user.state = "deleting_product";
-            await user.save();
-            twiml.message(t.askDeleteProduct);
-            return res.type("text/xml").send(twiml.toString());
-        }
-
-        if (user.state === "deleting_product") {
-            const result = await Product.findOneAndDelete({
-                traderPhone: from,
-                name: { $regex: new RegExp(`^${msg}$`, "i") }
-            });
-
-            user.state = "idle";
-            await user.save();
-
-            const feedback = result ? t.productDeleted : (lang === "en" ? "Product not found." : "Ba a sami kaya ba.");
-            twiml.message(feedback + "\n" + t.mainMenu);
-            return res.type("text/xml").send(twiml.toString());
+            case "deleting_product":
+                const result = await Product.findOneAndDelete({
+                    traderPhone: from,
+                    name: { $regex: new RegExp(`^${msg}$`, "i") },
+                });
+                user.state = "main_menu";
+                await user.save();
+                const feedback = result ?
+                    t.productDeleted :
+                    lang === "en" ?
+                    "Product not found." :
+                    "Ba a sami kaya ba.";
+                twiml.message(feedback + "\n" + t.mainMenu);
+                return res.type("text/xml").send(twiml.toString());
         }
 
         // Default fallback
         twiml.message(t.replyHi);
         return res.type("text/xml").send(twiml.toString());
-
     } catch (error) {
         console.error("Webhook Error:", error);
         twiml.message("Sorry, an error occurred. Please try again later.");
