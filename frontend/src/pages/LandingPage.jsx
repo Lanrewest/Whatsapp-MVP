@@ -112,7 +112,7 @@ const styles = {
 };
 
 export default function LandingPage() {
-  const WHATSAPP_LINK = "https://wa.me/14155238886?text=Join%20ArewaMarket";
+  const WHATSAPP_LINK = "https://wa.me/14155238886?text=Join%20themselves-game";
 
   const handleGetStarted = () => {
     window.open(WHATSAPP_LINK, "_blank");
