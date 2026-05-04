@@ -118,59 +118,56 @@ router.post("/", async(req, res) => {
             // Otherwise, start/restart language selection
             user.state = "awaiting_language";
             await user.save();
-            twiml.message(prompts.en.welcome);
+            twiml.message(prompts.en.welcome); // Default to language selection
             return res.type("text/xml").send(twiml.toString());
         }
 
-        // 2. State Machine for Registration and Menu
-        if (user.state === "awaiting_language") {
-            if (msg === "1") {
-                user.language = "en";
-                user.state = user.companyName ? "main_menu" : "register_company";
-                await user.save();
-                twiml.message(user.companyName ? t.mainMenu : prompts.en.askCompany);
-            } else if (msg === "2") {
-                user.language = "ha";
-                user.state = user.companyName ? "main_menu" : "register_company";
-                await user.save();
-                twiml.message(user.companyName ? t.mainMenu : prompts.ha.askCompany);
-            } else {
-                twiml.message(prompts.en.welcome);
-            }
-            return res.type("text/xml").send(twiml.toString());
-        }
-
-        if (user.state === "register_company") {
-            // Check if another trader is using this company name
-            const existing = await User.findOne({ companyName: { $regex: new RegExp(`^${msg}$`, "i") } });
-            if (existing && existing.phone !== from) {
-                twiml.message(t.companyNameTaken);
-                return res.type("text/xml").send(twiml.toString());
-            }
-
-            user.companyName = msg;
-            let baseSlug = slugify(msg);
-            let slug = baseSlug;
-            let i = 1;
-            while (await User.findOne({ slug })) {
-                slug = `${baseSlug}-${i++}`;
-            }
-            user.slug = slug;
-            user.state = "register_address";
-            await user.save();
-            twiml.message(prompts[user.language].askAddress);
-            return res.type("text/xml").send(twiml.toString());
-        }
-
-        if (user.state === "register_address") {
-            user.address = msg;
-            user.state = "main_menu";
-            await user.save();
-            twiml.message(prompts[user.language].registrationComplete + "\n" + t.mainMenu);
-            return res.type("text/xml").send(twiml.toString());
-        }
-
+        // 2. Main State Machine
         switch (user.state) {
+            case "awaiting_language":
+                if (msg === "1") {
+                    user.language = "en";
+                    user.state = user.companyName ? "main_menu" : "register_company";
+                } else if (msg === "2") {
+                    user.language = "ha";
+                    user.state = user.companyName ? "main_menu" : "register_company";
+                } else {
+                    twiml.message(prompts.en.welcome);
+                    return res.type("text/xml").send(twiml.toString());
+                }
+                await user.save();
+                twiml.message(user.companyName ? prompts[user.language].mainMenu : prompts[user.language].askCompany);
+                return res.type("text/xml").send(twiml.toString());
+
+            case "register_company":
+                // Escape special characters to prevent Regex crashes and enforce unique names
+                const safeCompanyName = msg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                const existing = await User.findOne({ companyName: { $regex: new RegExp(`^${safeCompanyName}$`, "i") } });
+
+                if (existing && existing.phone !== from) {
+                    twiml.message(t.companyNameTaken);
+                    return res.type("text/xml").send(twiml.toString());
+                }
+                user.companyName = msg;
+                let baseSlug = slugify(msg);
+                let slug = baseSlug;
+                let i = 1;
+                while (await User.findOne({ slug })) {
+                    slug = `${baseSlug}-${i++}`;
+                }
+                user.slug = slug;
+                user.state = "register_address";
+                await user.save();
+                twiml.message(t.askAddress);
+                return res.type("text/xml").send(twiml.toString());
+
+            case "register_address":
+                user.address = msg;
+                user.state = "main_menu";
+                await user.save();
+                twiml.message(t.registrationComplete + "\n" + t.mainMenu);
+                return res.type("text/xml").send(twiml.toString());
+
             case "idle":
             case "main_menu":
                 if (msg === "1") {
