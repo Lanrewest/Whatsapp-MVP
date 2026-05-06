@@ -6,12 +6,38 @@ export default function Store() {
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   const [products, setProducts] = useState([]);
+  const [cart, setCart] = useState({}); // { productId: { name, price, qty } }
   const [customerName, setCustomerName] = useState("");
   const [customerRequest, setCustomerRequest] = useState("");
   const [status, setStatus] = useState("");
   const [trader, setTrader] = useState(null);
   const [loading, setLoading] = useState(true); // Added loading state
   const [fetchError, setFetchError] = useState(null);
+
+  const addToCart = (product) => {
+    setCart(prev => {
+      const current = prev[product._id] || { ...product, qty: 0 };
+      return {
+        ...prev,
+        [product._id]: { ...current, qty: current.qty + 1 }
+      };
+    });
+  };
+
+  const removeFromCart = (productId) => {
+    setCart(prev => {
+      const newCart = { ...prev };
+      if (newCart[productId].qty > 1) {
+        newCart[productId].qty -= 1;
+      } else {
+        delete newCart[productId];
+      }
+      return newCart;
+    });
+  };
+
+  const cartItems = Object.values(cart);
+  const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -44,25 +70,33 @@ export default function Store() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!trader) return;
+    if (!trader || cartItems.length === 0) return;
+
+    // Construct Order Message
+    let orderSummary = cartItems.map(item => `- ${item.name} (x${item.qty}): ₦${item.price * item.qty}`).join('\n');
+    const fullMessage = `Hello ${trader.companyName || 'Trader'},\n\nI'm ${customerName}. I'd like to place an order for:\n\n${orderSummary}\n\n*Total: ₦${cartTotal}*\n\nAdditional Request: ${customerRequest}`;
+
     setStatus("Sending...");
-    const res = await fetch(`${API_BASE_URL}/api/request`, {
+    
+    // 1. Notify Backend (Optional, but keeps your logs/twilio working)
+    await fetch(`${API_BASE_URL}/api/request`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         traderPhone: trader.phone,
         customerName,
-        customerRequest
+        customerRequest: fullMessage
       })
     });
 
-    if (res.ok) {
-      setStatus("Request sent!");
-      setCustomerName("");
-      setCustomerRequest("");
-    } else {
-      setStatus("Failed to send request.");
-    }
+    // 2. Open Direct WhatsApp link
+    const waLink = `https://wa.me/${trader.phone.replace('+', '')}?text=${encodeURIComponent(fullMessage)}`;
+    window.open(waLink, '_blank');
+
+    setStatus("Redirecting to WhatsApp...");
+    setCart({});
+    setCustomerName("");
+    setCustomerRequest("");
   };
 
   if (loading) {
@@ -88,21 +122,52 @@ export default function Store() {
           )}
         </header>
         <section>
+          <h3 style={{ marginBottom: 16 }}>Products</h3>
           {products.length === 0 ? (
             <p style={{ color: "#888" }}>No products yet.</p>
           ) : (
             products.map(p => (
-              <div key={p._id} style={{ background: "#fff", borderRadius: 8, boxShadow: "0 2px 8px #0001", marginBottom: 20, padding: 16 }}>
+              <div key={p._id} style={{ background: "#fff", borderRadius: 8, boxShadow: "0 2px 8px #0001", marginBottom: 20, padding: 16, display: 'flex', gap: 16, alignItems: 'center' }}>
                 {p.imageUrl && <img src={p.imageUrl} alt={p.name} style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 8 }} />}
-                <h3 style={{ margin: "12px 0 4px", color: "#075e54" }}>{p.name}</h3>
-                <p style={{ margin: 0, color: "#222" }}>₦{p.price}</p>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: "0 0 4px", color: "#075e54" }}>{p.name}</h3>
+                  <p style={{ margin: 0, color: "#222", fontWeight: 'bold' }}>₦{p.price}</p>
+                </div>
+                <div>
+                   {cart[p._id] ? (
+                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <button onClick={() => removeFromCart(p._id)} style={btnSmall}>-</button>
+                        <span>{cart[p._id].qty}</span>
+                        <button onClick={() => addToCart(p)} style={btnSmall}>+</button>
+                     </div>
+                   ) : (
+                     <button onClick={() => addToCart(p)} style={btnAdd}>Add</button>
+                   )}
+                </div>
               </div>
             ))
           )}
         </section>
+
+        {cartItems.length > 0 && (
+          <section style={{ background: '#e8f5e9', padding: 20, borderRadius: 12, marginTop: 24 }}>
+            <h3>Your Cart</h3>
+            {cartItems.map(item => (
+              <div key={item._id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: 4 }}>
+                <span>{item.name} x {item.qty}</span>
+                <span>₦{item.price * item.qty}</span>
+              </div>
+            ))}
+            <div style={{ borderTop: '1px solid #ccc', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+              <span>Total:</span>
+              <span>₦{cartTotal}</span>
+            </div>
+          </section>
+        )}
+
         <section style={{ marginTop: 32 }}>
-          <h3>Request Product / Contact Trader</h3>
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <h3>Finish Your Order</h3>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
             <input
               type="text"
               placeholder="Your Name"
@@ -112,19 +177,40 @@ export default function Store() {
               style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc" }}
             />
             <textarea
-              placeholder="What do you want to request or ask?"
+              placeholder="Any extra instructions? (e.g. delivery time)"
               value={customerRequest}
               onChange={e => setCustomerRequest(e.target.value)}
-              required
               style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc", minHeight: 60 }}
             />
-            <button type="submit" style={{ background: "#25d366", color: "#fff", border: "none", borderRadius: 6, padding: "12px 0", fontWeight: 600, fontSize: "1rem" }}>
-              Send Request
+            <button 
+              type="submit" 
+              disabled={cartItems.length === 0}
+              style={{ background: cartItems.length === 0 ? "#ccc" : "#25d366", color: "#fff", border: "none", borderRadius: 6, padding: "12px 0", fontWeight: 600, fontSize: "1rem", cursor: 'pointer' }}
+            >
+              Checkout via WhatsApp
             </button>
-            {status && <div style={{ color: status === "Request sent!" ? "green" : "red" }}>{status}</div>}
+            {status && <div style={{ color: status.includes("Redirecting") ? "green" : "red", textAlign: 'center' }}>{status}</div>}
           </form>
         </section>
       </div>
     </div>
   );
 }
+
+const btnAdd = {
+  background: '#075e54',
+  color: '#fff',
+  border: 'none',
+  padding: '6px 16px',
+  borderRadius: '20px',
+  cursor: 'pointer'
+};
+
+const btnSmall = {
+  background: '#eee',
+  border: '1px solid #ccc',
+  width: '30px',
+  height: '30px',
+  borderRadius: '50%',
+  cursor: 'pointer'
+};
