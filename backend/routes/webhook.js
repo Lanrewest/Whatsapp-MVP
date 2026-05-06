@@ -89,62 +89,57 @@ router.post("/", async(req, res) => {
             });
         }
 
-        // Safety: Ensure currentProduct is initialized (for older user docs)
-        if (!user.currentProduct) {
-            user.currentProduct = { name: "", price: 0 };
-        }
-        // Ensure user has language and product state initialized
+        // Initialize defaults
         user.language = user.language || "en";
         user.currentProduct = user.currentProduct || { name: "", price: 0 };
         user.state = user.state || "awaiting_language";
 
-        // Use user's language or default to English
         const lang = user.language || "en";
         const t = prompts[lang];
 
-        // 1. Handle Greetings and "Join" triggers
-        const isGreeting = /hi|start|market/i.test(msg); // Corrected: Removed '^' from 'hi' to match "Join themselves-game"
+        // 1. Unified Greeting & Reset Logic
+        const isGreeting = /^hi$|^start$|^market$/i.test(msg);
         const isJoinMessage = /join/i.test(msg);
 
         if (isGreeting || isJoinMessage) {
-            // If already registered and just saying "Hi", show menu
             if (user.companyName && !isJoinMessage) {
                 user.state = "main_menu";
                 await user.save();
                 twiml.message(`${t.welcomeBack(user.companyName)}\n${t.mainMenu}`);
                 return res.type("text/xml").send(twiml.toString());
             }
-
-            // Otherwise, start/restart language selection
             user.state = "awaiting_language";
             await user.save();
-            twiml.message(prompts.en.welcome); // Default to language selection
+            twiml.message(prompts.en.welcome);
             return res.type("text/xml").send(twiml.toString());
         }
 
-        // 2. Main State Machine
+        // 2. State Machine
         switch (user.state) {
             case "awaiting_language":
                 if (msg === "1") {
                     user.language = "en";
-                    user.state = user.companyName ? "main_menu" : "register_company";
                 } else if (msg === "2") {
                     user.language = "ha";
-                    user.state = user.companyName ? "main_menu" : "register_company";
                 } else {
                     twiml.message(prompts.en.welcome);
                     return res.type("text/xml").send(twiml.toString());
                 }
+                user.state = user.companyName ? "main_menu" : "register_company";
                 await user.save();
                 twiml.message(user.companyName ? prompts[user.language].mainMenu : prompts[user.language].askCompany);
                 return res.type("text/xml").send(twiml.toString());
 
             case "register_company":
-                // Escape special characters to prevent Regex crashes and enforce unique names
-                const safeCompanyName = msg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                const existing = await User.findOne({ companyName: { $regex: new RegExp(`^${safeCompanyName}$`, "i") } });
-
-                if (existing && existing.phone !== from) {
+                if (user.companyName) { // Immutability Guard
+                    user.state = "main_menu";
+                    await user.save();
+                    twiml.message(t.welcomeBack(user.companyName) + "\n" + t.mainMenu);
+                    return res.type("text/xml").send(twiml.toString());
+                }
+                const safeName = msg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                const existing = await User.findOne({ companyName: { $regex: new RegExp(`^${safeName}$`, "i") } });
+                if (existing) { // Uniqueness Guard
                     twiml.message(t.companyNameTaken);
                     return res.type("text/xml").send(twiml.toString());
                 }
@@ -152,9 +147,7 @@ router.post("/", async(req, res) => {
                 let baseSlug = slugify(msg);
                 let slug = baseSlug;
                 let i = 1;
-                while (await User.findOne({ slug })) {
-                    slug = `${baseSlug}-${i++}`;
-                }
+                while (await User.findOne({ slug })) { slug = `${baseSlug}-${i++}`; }
                 user.slug = slug;
                 user.state = "register_address";
                 await user.save();

@@ -7,6 +7,7 @@ const UserSchema = new mongoose.Schema({
     companyName: { type: String },
     slug: { type: String, unique: true, sparse: true },
     address: { type: String },
+    email: { type: String, unique: true, sparse: true }, // Added to fix the duplicate null error
     currentProduct: {
         name: String,
         price: Number

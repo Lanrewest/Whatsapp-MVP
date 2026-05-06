@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 export default function Store() {
-  const { phone } = useParams();
+  const { slug } = useParams();
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   const [products, setProducts] = useState([]);
@@ -15,13 +15,13 @@ export default function Store() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!phone) return;
+      if (!slug) return;
       setLoading(true);
       setFetchError(null);
       try {
         const [prodRes, traderRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/products/${phone}`),
-          fetch(`${API_BASE_URL}/api/trader/${phone}`)
+          fetch(`${API_BASE_URL}/api/products/${slug}`),
+          fetch(`${API_BASE_URL}/api/trader/${slug}`)
         ]);
 
         if (!prodRes.ok) throw new Error("Failed to load products");
@@ -40,16 +40,17 @@ export default function Store() {
       }
     };
     fetchData();
-  }, [phone]);
+  }, [slug]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!trader) return;
     setStatus("Sending...");
     const res = await fetch(`${API_BASE_URL}/api/request`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        traderPhone: phone,
+        traderPhone: trader.phone,
         customerName,
         customerRequest
       })
