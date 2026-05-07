@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom"; // Ensure this is present
 
 // Shared theme constants
 const theme = {
@@ -51,6 +52,8 @@ const styles = {
     fontWeight: 400,
     fontSize: "1.2rem",
     marginBottom: "2rem",
+    maxWidth: "700px",
+    margin: "0 auto 2rem",
     color: theme.textLight,
     maxWidth: "700px",
     margin: "0 auto 2rem",
@@ -150,6 +153,12 @@ export default function LandingPage() {
           Get Started for Free
         </button>
       </header>
+
+      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+        <Link to="/store" style={{ ...styles.buttonPrimary, background: theme.secondary, textDecoration: 'none' }}>
+          View All Stores
+        </Link>
+      </div>
 
       <main>
         <section style={styles.section}>

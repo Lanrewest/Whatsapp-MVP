@@ -43,7 +43,7 @@ mongoose
         serverSelectionTimeoutMS: 10000, // Wait longer for initial selection
         connectTimeoutMS: 20000, // Allow more time for handshake
         socketTimeoutMS: 45000, // Prevent socket hangup
-        family: 4 // Force IPv4 (sometimes resolves ETIMEOUT)
+        family: 4, // Force IPv4 (sometimes resolves ETIMEOUT)
     })
     .then(() => console.log("MongoDB connected"));
 
@@ -62,6 +62,12 @@ app.get("/api/products/:key", async(req, res) => {
     }
     if (!user) return res.json([]);
     const products = await Product.find({ traderPhone: user.phone });
+    res.json(products);
+});
+
+// Get all products for the general store
+app.get("/api/products", async(req, res) => {
+    const products = await Product.find({});
     res.json(products);
 });
 

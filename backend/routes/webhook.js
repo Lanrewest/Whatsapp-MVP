@@ -127,19 +127,27 @@ router.post("/", async(req, res) => {
                 }
                 user.state = user.companyName ? "main_menu" : "register_company";
                 await user.save();
-                twiml.message(user.companyName ? prompts[user.language].mainMenu : prompts[user.language].askCompany);
+                twiml.message(
+                    user.companyName ?
+                    prompts[user.language].mainMenu :
+                    prompts[user.language].askCompany,
+                );
                 return res.type("text/xml").send(twiml.toString());
 
             case "register_company":
-                if (user.companyName) { // Immutability Guard
+                if (user.companyName) {
+                    // Immutability Guard
                     user.state = "main_menu";
                     await user.save();
                     twiml.message(t.welcomeBack(user.companyName) + "\n" + t.mainMenu);
                     return res.type("text/xml").send(twiml.toString());
                 }
                 const safeName = msg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                const existing = await User.findOne({ companyName: { $regex: new RegExp(`^${safeName}$`, "i") } });
-                if (existing) { // Uniqueness Guard
+                const existing = await User.findOne({
+                    companyName: { $regex: new RegExp(`^${safeName}$`, "i") },
+                });
+                if (existing) {
+                    // Uniqueness Guard
                     twiml.message(t.companyNameTaken);
                     return res.type("text/xml").send(twiml.toString());
                 }
@@ -147,7 +155,9 @@ router.post("/", async(req, res) => {
                 let baseSlug = slugify(msg);
                 let slug = baseSlug;
                 let i = 1;
-                while (await User.findOne({ slug })) { slug = `${baseSlug}-${i++}`; }
+                while (await User.findOne({ slug })) {
+                    slug = `${baseSlug}-${i++}`;
+                }
                 user.slug = slug;
                 user.state = "register_address";
                 await user.save();
@@ -218,6 +228,7 @@ router.post("/", async(req, res) => {
                     return res.type("text/xml").send(twiml.toString());
                 }
                 await Product.create({
+                    traderSlug: user.slug, // Save the trader's slug with the product
                     traderPhone: from,
                     name: user.currentProduct.name,
                     price: user.currentProduct.price,

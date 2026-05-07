@@ -78,19 +78,24 @@ export default function Store() {
 
     setStatus("Sending...");
     
-    // 1. Notify Backend (Optional, but keeps your logs/twilio working)
-    await fetch(`${API_BASE_URL}/api/request`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        traderPhone: trader.phone,
-        customerName,
-        customerRequest: fullMessage
-      })
-    });
+    try {
+      // 1. Notify Backend (Optional, but keeps your logs/twilio working)
+      await fetch(`${API_BASE_URL}/api/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          traderPhone: trader.phone,
+          customerName,
+          customerRequest: fullMessage
+        })
+      });
+    } catch (err) {
+      console.warn("Backend notification failed, proceeding to WhatsApp...", err);
+    }
 
     // 2. Open Direct WhatsApp link
-    const waLink = `https://wa.me/${trader.phone.replace('+', '')}?text=${encodeURIComponent(fullMessage)}`;
+    const cleanPhone = trader.phone.replace(/\D/g, ''); // Ensure only digits for WhatsApp link
+    const waLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(fullMessage)}`;
     window.open(waLink, '_blank');
 
     setStatus("Redirecting to WhatsApp...");
@@ -104,7 +109,7 @@ export default function Store() {
   }
 
   if (fetchError) {
-    return <div style={{ textAlign: "center", padding: 50, color: "red" }}>Error: {fetchError}</div>;
+    return <div style={{ textAlign: "center", padding: 50, color: "red" }}>Error loading store: {fetchError}. Please ensure the backend is running and accessible.</div>;
   }
 
   return (
