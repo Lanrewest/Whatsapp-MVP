@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom"; // Ensure this is present
+import Logo from "../Logo";
 
 // Shared theme constants
 const theme = {
@@ -119,6 +120,13 @@ const styles = {
 export default function LandingPage() {
   const WHATSAPP_LINK = "https://wa.me/14155238886?text=Join%20themselves-game";
 
+  useEffect(() => {
+    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+    // Analytics: Track landing page visit
+    fetch(`${API_URL}/api/analytics/track?page=landing`, { method: 'POST' })
+      .catch(err => console.warn("Analytics failed", err));
+  }, []);
+
   const handleGetStarted = () => {
     window.open(WHATSAPP_LINK, "_blank");
   };
@@ -139,7 +147,9 @@ export default function LandingPage() {
       </style>
 
       <nav style={styles.navbar}>
-        <div style={styles.logo}>Arewa<span>Market</span></div>
+        <Link to="/" style={{ textDecoration: 'none' }}>
+          <Logo width="180" height="45" />
+        </Link>
         <button onClick={handleGetStarted} className="navbar-btn" style={{ ...styles.buttonPrimary, padding: '10px 24px', fontSize: '0.9rem' }}>
           Join Now
         </button>

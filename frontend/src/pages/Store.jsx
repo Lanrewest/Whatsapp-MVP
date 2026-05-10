@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import Logo from "../Logo";
 
 export default function Store() {
   const { slug } = useParams();
@@ -13,6 +14,7 @@ export default function Store() {
   const [trader, setTrader] = useState(null);
   const [loading, setLoading] = useState(true); // Added loading state
   const [fetchError, setFetchError] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const addToCart = (product) => {
     setCart(prev => {
@@ -39,6 +41,12 @@ export default function Store() {
   const cartItems = Object.values(cart);
   const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
+  const handleBuyNow = (product) => {
+    addToCart(product);
+    setSelectedProduct(null);
+    document.getElementById("checkout-form")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (!slug) return;
@@ -58,6 +66,10 @@ export default function Store() {
 
         setProducts(prodData);
         setTrader(traderData);
+
+        // Analytics: Track store visit
+        fetch(`${API_BASE_URL}/api/analytics/track?page=store&slug=${slug}`, { method: 'POST' })
+          .catch(() => {});
       } catch (err) {
         console.error("Error loading store:", err);
         setFetchError(err.message);
@@ -90,11 +102,12 @@ export default function Store() {
         })
       });
     } catch (err) {
-      console.warn("Backend notification failed, proceeding to WhatsApp...", err);
+      console.warn("Backend notification failed, but continuing to WhatsApp checkout.");
     }
 
     // 2. Open Direct WhatsApp link
-    const cleanPhone = trader.phone.replace(/\D/g, ''); // Ensure only digits for WhatsApp link
+    // Ensure phone starts with country code and has no '+' or spaces
+    const cleanPhone = trader.phone.replace(/\D/g, '');
     const waLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(fullMessage)}`;
     window.open(waLink, '_blank');
 
@@ -116,10 +129,15 @@ export default function Store() {
     <div style={{ minHeight: "100vh", background: "#f7f7f7", padding: 24 }}>
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
         <header style={{ textAlign: "center", marginBottom: 32 }}>
-          <h1 style={{ color: "#075e54", fontSize: "2.5rem" }}>ArewaMarket</h1>
+          <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '1rem' }}>
+            <Logo width="220" height="55" />
+          </Link>
           {trader ? (
             <div style={{ marginBottom: 16 }}>
-              <h2 style={{ color: "#333", fontSize: "1.5rem", margin: "0 0 4px" }}>{trader.companyName || "Trader Store"}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <h2 style={{ color: "#333", fontSize: "1.5rem", margin: "0 0 4px" }}>{trader.companyName || "Trader Store"}</h2>
+                {trader.isVerified && <span title="Verified Trader" style={{ fontSize: '1.2rem' }}>✅</span>}
+              </div>
               {trader.address && <p style={{ color: "#666", margin: 0 }}>{trader.address}</p>}
             </div>
           ) : (
@@ -133,12 +151,13 @@ export default function Store() {
           ) : (
             products.map(p => (
               <div key={p._id} style={{ background: "#fff", borderRadius: 8, boxShadow: "0 2px 8px #0001", marginBottom: 20, padding: 16, display: 'flex', gap: 16, alignItems: 'center' }}>
-                {p.imageUrl && <img src={p.imageUrl} alt={p.name} style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 8 }} />}
+                {p.imageUrl && <img src={p.imageUrl} alt={p.name} style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: 8 }} />}
                 <div style={{ flex: 1 }}>
                   <h3 style={{ margin: "0 0 4px", color: "#075e54" }}>{p.name}</h3>
                   <p style={{ margin: 0, color: "#222", fontWeight: 'bold' }}>₦{p.price}</p>
                 </div>
-                <div>
+                <div className="product-actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                   <button onClick={() => setSelectedProduct(p)} style={btnDetails}>Details</button>
                    {cart[p._id] ? (
                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <button onClick={() => removeFromCart(p._id)} style={btnSmall}>-</button>
@@ -171,7 +190,7 @@ export default function Store() {
         )}
 
         <section style={{ marginTop: 32 }}>
-          <h3>Finish Your Order</h3>
+          <h3 id="checkout-form">Finish Your Order</h3>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
             <input
               type="text"
@@ -198,6 +217,34 @@ export default function Store() {
           </form>
         </section>
       </div>
+
+      {/* Product Details Modal */}
+      {selectedProduct && (
+        <div style={modalOverlay}>
+          <div style={modalContent}>
+            <button onClick={() => setSelectedProduct(null)} style={btnClose}>×</button>
+            <h2 style={{ color: '#075e54', marginBottom: '16px', fontSize: '1.4rem' }}>Product Details</h2>
+            {selectedProduct.imageUrl && (
+              <img 
+                src={selectedProduct.imageUrl} 
+                alt={selectedProduct.name} 
+                style={{ width: '100%', maxHeight: '250px', objectFit: 'cover', borderRadius: '12px', marginBottom: '16px' }} 
+              />
+            )}
+            <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+              <p style={{ margin: '8px 0', fontSize: '1.1rem' }}><strong>{selectedProduct.name}</strong></p>
+              <p style={{ margin: '8px 0', color: '#075e54', fontWeight: 'bold', fontSize: '1.2rem' }}>₦{selectedProduct.price}</p>
+              <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '12px 0' }} />
+              <p style={{ margin: '4px 0', color: '#666', fontSize: '0.9rem' }}>Sold By: <strong>{trader?.companyName}</strong></p>
+              {trader?.address && <p style={{ margin: '4px 0', color: '#666', fontSize: '0.9rem' }}>Location: {trader.address}</p>}
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }} style={btnAdd}>Add to Cart</button>
+              <button onClick={() => handleBuyNow(selectedProduct)} style={{ ...btnAdd, background: '#25d366' }}>Buy Now</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -218,4 +265,51 @@ const btnSmall = {
   height: '30px',
   borderRadius: '50%',
   cursor: 'pointer'
+};
+
+const btnDetails = {
+  background: '#eee',
+  color: '#333',
+  border: '1px solid #ccc',
+  padding: '6px 16px',
+  borderRadius: '20px',
+  cursor: 'pointer',
+  fontSize: '0.8rem'
+};
+
+const btnClose = {
+  position: 'absolute',
+  top: '10px',
+  right: '15px',
+  background: 'none',
+  border: 'none',
+  fontSize: '28px',
+  cursor: 'pointer',
+  color: '#999'
+};
+
+const modalOverlay = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  background: 'rgba(0,0,0,0.7)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  zIndex: 2000,
+  padding: '20px'
+};
+
+const modalContent = {
+  background: '#fff',
+  borderRadius: '16px',
+  padding: '24px',
+  maxWidth: '450px',
+  width: '100%',
+  position: 'relative',
+  maxHeight: '90vh',
+  overflowY: 'auto',
+  textAlign: 'center'
 };
