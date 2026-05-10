@@ -67,6 +67,11 @@ export default function Store() {
         setProducts(prodData);
         setTrader(traderData);
 
+        // Update tab name to the Trader's Company Name
+        if (traderData?.companyName) {
+          document.title = `${traderData.companyName} | ArewaMarket`;
+        }
+
         // Analytics: Track store visit
         fetch(`${API_BASE_URL}/api/analytics/track?page=store&slug=${slug}`, { method: 'POST' })
           .catch(() => {});

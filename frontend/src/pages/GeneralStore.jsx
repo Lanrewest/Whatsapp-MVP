@@ -12,6 +12,7 @@ export default function GeneralStore() {
   const [fetchError, setFetchError] = useState(null);
 
   useEffect(() => {
+    document.title = "Browse All Products | ArewaMarket";
     const fetchAllProducts = async () => {
       setLoading(true);
       setFetchError(null);
