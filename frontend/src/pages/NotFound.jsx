@@ -6,6 +6,13 @@ export default function NotFound() {
   return (
     <div style={styles.container}>
       <Logo width="200" height="60" />
+      <div style={{ marginTop: '2rem' }}>
+        <img 
+          src="https://www.svgrepo.com/show/426192/404-error.svg" 
+          alt="Not Found Illustration" 
+          style={{ width: '100%', maxWidth: '250px', opacity: 0.8 }} 
+        />
+      </div>
       <h1 style={styles.title}>404</h1>
       <p style={styles.text}>Kayi hakuri! Ba a sami wannan shafin ba.</p>
       <p style={styles.subtext}>(Oops! The page you are looking for doesn't exist.)</p>

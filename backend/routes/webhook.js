@@ -24,12 +24,11 @@ const prompts = {
     welcome:
       "Welcome to ArewaMarket! Please select your language:\n1. English\n2. Hausa",
     askCompany: "Please enter your company name:",
-    askAddress: "Please enter your business location/address:",
-    askEmail: "Please enter your business email (or type SKIP):",
+    askAddress: "Please enter your company address:",
     registrationComplete: "Registration complete! You can now add products.",
     addProduct: "1. Add Product\n2. View My Store",
     enterProductName: "Enter product name:",
-    enterPrice: "Enter price (numbers only):",
+    enterPrice: "Enter price:",
     companyNameTaken:
       "This company name is already taken. Please choose another one.",
     enterValidPrice: "Enter valid price:",
@@ -38,15 +37,12 @@ const prompts = {
     viewStore: (slug) =>
       `${process.env.FRONTEND_URL || "https://arewa-market.vercel.app"}/store/${slug}`,
     replyHi: "Reply Hi to start",
-    welcomeBack: (name) =>
-      `🏪 *${name}* - Main Menu\nWhat would you like to do?`,
+    welcomeBack: (name) => `Welcome back, ${name}! What would you like to do?`,
     mainMenu:
-      "1. ➕ Add Product\n2. 🔗 My Store Link\n3. 📍 Update Address\n4. 📧 Update Email\n5. 🗑️ Delete Product",
+      "1. Add Product\n2. View My Store\n3. Update Address\n4. Delete Product",
     productNotFound: "Product not found.",
     askNewAddress: "Please enter your new company address:",
     addressUpdated: "✅ Address updated successfully!",
-    askNewEmail: "Please enter your new business email:",
-    emailUpdated: "✅ Email updated successfully!",
     askDeleteProduct: "Enter the exact name of the product you want to delete:",
     productDeleted: "🗑️ Product deleted successfully.",
   },
@@ -54,12 +50,11 @@ const prompts = {
     welcome:
       "Barka da zuwa ArewaMarket! Da fatan za a zaɓi yaren ku:\n1. Turanci\n2. Hausa",
     askCompany: "Da fatan za a shigar da sunan kamfanin ku:",
-    askAddress: "Da fatan za a shigar da adireshin kasuwancin ku:",
-    askEmail: "Da fatan za a shigar da imel na kasuwanci (ko rubuta SKIP):",
+    askAddress: "Da fatan za a shigar da adireshin kamfanin ku:",
     registrationComplete: "Rajista ta kammala! Yanzu zaku iya ƙara kayayyaki.",
     addProduct: "1. Ƙara Kaya\n2. Duba Shagona",
     enterProductName: "Shigar da sunan kaya:",
-    enterPrice: "Shigar da farashi (lamba kawai):",
+    enterPrice: "Shigar da farashi:",
     companyNameTaken:
       "An riga an yi amfani da wannan sunan kamfani. Da fatan za a zaɓi wani.",
     enterValidPrice: "Shigar da sahihin farashi:",
@@ -68,14 +63,12 @@ const prompts = {
     viewStore: (slug) =>
       `${process.env.FRONTEND_URL || "https://arewa-market.vercel.app"}/store/${slug}`,
     replyHi: "Amsa da Hi don farawa",
-    welcomeBack: (name) => `🏪 *${name}* - Babban Menu\nMe kake son yi?`,
+    welcomeBack: (name) => `Barka da dawowa, ${name}! Me kake son yi?`,
     mainMenu:
-      "1. ➕ Ƙara Kaya\n2. 🔗 Duba Shagona\n3. 📍 Gyara Adireshin\n4. 📧 Gyara Imel\n5. 🗑️ Goge Kaya",
+      "1. Ƙara Kaya\n2. Duba Shagona\n3. Gyara Adireshin Kamfani\n4. Goge Kaya",
     productNotFound: "Ba a sami kaya ba.",
     askNewAddress: "Da fatan za a shigar da sabon adireshin kamfani:",
     addressUpdated: "✅ An gyara adireshin kamfani cikin nasara!",
-    askNewEmail: "Da fatan za a shigar da sabon imel na kasuwanci:",
-    emailUpdated: "✅ An gyara imel cikin nasara!",
     askDeleteProduct: "Shigar da ainihin sunan kayan da kake son gogewa:",
     productDeleted: "🗑️ An goge kayan cikin nasara.",
   },
@@ -179,18 +172,9 @@ router.post("/", async (req, res) => {
 
       case "register_address":
         user.address = msg;
-        user.state = "register_email";
-        await user.save();
-        twiml.message(t.askEmail);
-        return res.type("text/xml").send(twiml.toString());
-
-      case "register_email":
-        if (msg.toUpperCase() !== "SKIP") {
-          user.email = msg;
-        }
         user.state = "main_menu";
         await user.save();
-        twiml.message("🎉 " + t.registrationComplete + "\n\n" + t.mainMenu);
+        twiml.message(t.registrationComplete + "\n" + t.mainMenu);
         return res.type("text/xml").send(twiml.toString());
 
       case "idle":
@@ -204,9 +188,7 @@ router.post("/", async (req, res) => {
           const storeLink = user.slug
             ? t.viewStore(user.slug)
             : t.viewStore(from);
-          twiml.message(
-            `Your store is live! 🌐\n\n${storeLink}\n\nShare this link on your WhatsApp Status to get orders.`,
-          );
+          twiml.message(storeLink);
           return res.type("text/xml").send(twiml.toString());
         } else if (msg === "3") {
           user.state = "updating_address";
@@ -214,11 +196,6 @@ router.post("/", async (req, res) => {
           twiml.message(t.askNewAddress);
           return res.type("text/xml").send(twiml.toString());
         } else if (msg === "4") {
-          user.state = "updating_email";
-          await user.save();
-          twiml.message(t.askNewEmail);
-          return res.type("text/xml").send(twiml.toString());
-        } else if (msg === "5") {
           user.state = "deleting_product";
           await user.save();
           twiml.message(t.askDeleteProduct);
@@ -274,13 +251,6 @@ router.post("/", async (req, res) => {
         user.state = "main_menu";
         await user.save();
         twiml.message(t.addressUpdated + "\n" + t.mainMenu);
-        return res.type("text/xml").send(twiml.toString());
-
-      case "updating_email":
-        user.email = msg;
-        user.state = "main_menu";
-        await user.save();
-        twiml.message(t.emailUpdated + "\n" + t.mainMenu);
         return res.type("text/xml").send(twiml.toString());
 
       case "deleting_product":

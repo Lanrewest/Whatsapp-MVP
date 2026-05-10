@@ -10,6 +10,12 @@ export default function App() {
   useEffect(() => {
     // Set Default Tab Title
     document.title = "ArewaMarket | Northern Digital Storefronts";
+
+    // Dynamic Favicon Fix: Forces the tab icon to appear
+    const link = document.querySelector("link[rel~='icon']") || document.createElement('link');
+    link.rel = 'icon';
+    link.href = 'https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg';
+    document.getElementsByTagName('head')[0].appendChild(link);
   }, []);
 
   return (
