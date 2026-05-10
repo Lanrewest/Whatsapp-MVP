@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Store from "./pages/Store"; // .jsx is implied
 import GeneralStore from "./pages/GeneralStore"; // .jsx is implied
@@ -7,6 +7,11 @@ import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
 
 export default function App() {
+  useEffect(() => {
+    // Set Default Tab Title
+    document.title = "ArewaMarket | Northern Digital Storefronts";
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
