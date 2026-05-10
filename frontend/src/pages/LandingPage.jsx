@@ -56,8 +56,6 @@ const styles = {
     maxWidth: "700px",
     margin: "0 auto 2rem",
     color: theme.textLight,
-    maxWidth: "700px",
-    margin: "0 auto 2rem",
   },
   buttonPrimary: {
     background: theme.primary,
@@ -78,7 +76,7 @@ const styles = {
   },
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
     gap: "2rem",
   },
   card: {
@@ -87,6 +85,9 @@ const styles = {
     borderRadius: "16px",
     textAlign: "center",
     boxShadow: "0 10px 30px rgba(0, 0, 0, 0.03)",
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
   },
   stepIcon: {
     width: 50,
@@ -143,6 +144,14 @@ export default function LandingPage() {
             .hero-img { width: 60px !important; }
             .cta-title { font-size: 1.8rem !important; }
           }
+          @media (max-width: 768px) {
+            .how-it-works-grid {
+              grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+              gap: 1.5rem !important;
+            }
+            .step-card { padding: 1.5rem !important; }
+          }
+          .step-card:hover { transform: translateY(-5px); transition: transform 0.3s ease; }
         `}
       </style>
 
@@ -173,23 +182,23 @@ export default function LandingPage() {
       <main>
         <section style={styles.section}>
           <h2 style={{ textAlign: "center", fontSize: "2.2rem", color: "#075e54", marginBottom: 48 }}>How It Works</h2>
-          <div style={styles.grid}>
-            <div style={styles.card}>
+          <div style={styles.grid} className="how-it-works-grid">
+            <div style={styles.card} className="step-card">
               <div style={styles.stepIcon}>1</div>
               <h3>Setup Your Store</h3>
               <p style={{ color: "#666", lineHeight: "1.5" }}>Register your business details and WhatsApp number in seconds.</p>
             </div>
-            <div style={styles.card}>
+            <div style={styles.card} className="step-card">
               <div style={styles.stepIcon}>2</div>
               <h3>Upload Products</h3>
               <p style={{ color: "#666", lineHeight: "1.5" }}>Add pictures and prices for everything you sell to create your catalog.</p>
             </div>
-            <div style={styles.card}>
+            <div style={styles.card} className="step-card">
               <div style={styles.stepIcon}>3</div>
               <h3>Share Link</h3>
               <p style={{ color: "#666", lineHeight: "1.5" }}>Share your unique store link on your WhatsApp Status and groups.</p>
             </div>
-            <div style={styles.card}>
+            <div style={styles.card} className="step-card">
               <div style={styles.stepIcon}>4</div>
               <h3>Sell via Chat</h3>
               <p style={{ color: "#666", lineHeight: "1.5" }}>Customers send orders directly to your WhatsApp. No middleman.</p>
