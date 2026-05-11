@@ -122,7 +122,7 @@ export default function LandingPage() {
   const WHATSAPP_LINK = "https://wa.me/14155238886?text=Join%20themselves-game";
 
   useEffect(() => {
-    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+    const API_URL = process.env.REACT_APP_API_URL || "https://localhost:5000";
     // Analytics: Track landing page visit
     fetch(`${API_URL}/api/analytics/track?page=landing`, { method: 'POST' })
       .catch(err => console.warn("Analytics failed", err));
