@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Logo from "../Logo";
 
 export default function GeneralStore() {
-  const API_BASE_URL = process.env.REACT_APP_API_URL || "https://localhost:5000";
+  const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   const [allProducts, setAllProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
