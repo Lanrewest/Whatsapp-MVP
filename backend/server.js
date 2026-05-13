@@ -26,6 +26,12 @@ requiredEnvs.forEach((env) => {
   }
 });
 
+// Initialize Twilio client once
+const twilioClient = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN,
+);
+
 const app = express();
 app.use(
   cors({
@@ -98,13 +104,9 @@ app.post("/api/request", async (req, res) => {
     return res.status(404).json({ error: "Trader not found" });
   }
 
-  // Send WhatsApp message to trader
-  const client = twilio(
-    process.env.TWILIO_ACCOUNT_SID,
-    process.env.TWILIO_AUTH_TOKEN,
-  );
   try {
-    await client.messages.create({
+    // Use the pre-initialized client
+    await twilioClient.messages.create({
       from: process.env.TWILIO_WHATSAPP_NUMBER,
       to: `whatsapp:${traderPhone}`,
       body: `New customer request from ${customerName}:\n${customerRequest}`,
@@ -148,6 +150,24 @@ app.patch("/api/admin/verify/:id", async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to update verification" });
+  }
+});
+
+// Delete Trader and their products
+app.delete("/api/admin/trader/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // 1. Delete all products belonging to this trader to keep DB clean
+    await Product.deleteMany({ traderPhone: user.phone });
+
+    // 2. Delete the user
+    await User.findByIdAndDelete(req.params.id);
+
+    res.json({ success: true, message: "Trader and products deleted." });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete trader" });
   }
 });
 
