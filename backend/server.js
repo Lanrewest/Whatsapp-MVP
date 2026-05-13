@@ -114,6 +114,47 @@ app.post("/api/request", async (req, res) => {
   }
 });
 
+// --- Missing Admin & Analytics Routes ---
+
+// Get Admin Stats
+app.get("/api/admin/stats", async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalProducts = await Product.countDocuments();
+    const traders = await User.find({});
+    res.json({
+      traders,
+      totalUsers,
+      totalProducts,
+      landingVisits: 0,
+      storeVisits: 0,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch stats" });
+  }
+});
+
+// Toggle Trader Verification
+app.patch("/api/admin/verify/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    user.isVerified = !user.isVerified;
+    await user.save();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update verification" });
+  }
+});
+
+// Analytics Tracker (Placeholder)
+app.post("/api/analytics/track", (req, res) => {
+  // Logic to track visits can be added here
+  res.json({ success: true });
+});
+
+// ---------------------------------------
+
 const HTTP_PORT = process.env.PORT || 5000;
 
 app.listen(HTTP_PORT, () => {
