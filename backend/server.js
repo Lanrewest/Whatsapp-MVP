@@ -6,6 +6,7 @@ const cors = require("cors");
 
 const webhook = require("./routes/webhook");
 const Product = require("./models/Product");
+const Visit = require("./models/Visit"); // Import the new Visit model
 const User = require("./models/User");
 const twilio = require("twilio");
 
@@ -114,20 +115,23 @@ app.post("/api/request", async (req, res) => {
   }
 });
 
-// --- Missing Admin & Analytics Routes ---
-
 // Get Admin Stats
 app.get("/api/admin/stats", async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const totalProducts = await Product.countDocuments();
+
+    // Fetch visit counts from the new Visit model
+    const landingVisits = await Visit.countDocuments({ page: "landing" });
+    const storeVisits = await Visit.countDocuments({ page: "store" });
+
     const traders = await User.find({});
     res.json({
       traders,
       totalUsers,
       totalProducts,
-      landingVisits: 0,
-      storeVisits: 0,
+      landingVisits,
+      storeVisits,
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch stats" });
@@ -148,12 +152,24 @@ app.patch("/api/admin/verify/:id", async (req, res) => {
 });
 
 // Analytics Tracker (Placeholder)
-app.post("/api/analytics/track", (req, res) => {
-  // Logic to track visits can be added here
-  res.json({ success: true });
-});
+app.post("/api/analytics/track", async (req, res) => {
+  try {
+    const { page, slug } = req.query; // Assuming page and slug are passed as query parameters
+    if (!page) {
+      return res.status(400).json({ error: "Missing 'page' parameter" });
+    }
 
-// ---------------------------------------
+    const visitData = { page };
+    if (page === "store" && slug) {
+      visitData.slug = slug;
+    }
+    await Visit.create(visitData);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error tracking analytics:", error);
+    res.status(500).json({ error: "Failed to track visit" });
+  }
+});
 
 const HTTP_PORT = process.env.PORT || 5000;
 

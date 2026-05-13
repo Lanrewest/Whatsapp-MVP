@@ -2,9 +2,15 @@ import React, { useEffect, useState } from "react";
 import Logo from "../Logo";
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({ traders: [], totalVisits: 0, totalUsers: 0 });
+  const [stats, setStats] = useState({
+    traders: [],
+    totalUsers: 0,
+    totalProducts: 0,
+    landingVisits: 0,
+    storeVisits: 0,
+  });
   const [loading, setLoading] = useState(true);
-    const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -67,9 +73,16 @@ export default function AdminDashboard() {
 
   return (
     <div style={{ padding: '2rem', background: '#f4f7f6', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
-        <Logo width="150" height="40" />
-        <h1>Super Admin Control</h1>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <Logo width="150" height="40" />
+          <h1>Super Admin Control</h1>
+        </div>
+        <button 
+          onClick={fetchStats} 
+          style={{ ...btnStyle('#075e54'), padding: '10px 20px', fontWeight: 'bold' }}>
+          🔄 Refresh Stats
+        </button>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
