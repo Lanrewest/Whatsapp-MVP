@@ -3,8 +3,6 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const https = require("https"); // Import https module
-const fs = require("fs"); // Import file system module
 
 const webhook = require("./routes/webhook");
 const Product = require("./models/Product");
@@ -18,9 +16,6 @@ const requiredEnvs = [
   "TWILIO_AUTH_TOKEN",
   "TWILIO_WHATSAPP_NUMBER",
   "CLOUDINARY_URL",
-  // For HTTPS, ensure these are set in production with paths to your SSL files:
-  // "SSL_KEY_PATH",
-  // "SSL_CERT_PATH",
   "FRONTEND_URL",
 ];
 requiredEnvs.forEach((env) => {
