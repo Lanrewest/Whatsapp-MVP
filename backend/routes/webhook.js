@@ -241,7 +241,10 @@ router.post("/", async (req, res) => {
               `https://${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}@api.twilio.com`,
             );
 
-            console.log("Attempting to upload media to Cloudinary...");
+            console.log(
+              `Attempting Cloudinary upload using SID: ${process.env.TWILIO_ACCOUNT_SID ? process.env.TWILIO_ACCOUNT_SID.substring(0, 5) : "MISSING"}...`,
+            );
+
             const uploadResult = await cloudinary.uploader.upload(
               authenticatedMediaUrl,
               {
@@ -252,7 +255,10 @@ router.post("/", async (req, res) => {
             imageUrl = uploadResult.secure_url; // Get the permanent secure URL
             console.log("Image uploaded to Cloudinary successfully:", imageUrl);
           } catch (uploadError) {
-            console.error("Cloudinary upload failed:", uploadError);
+            console.error(
+              "Cloudinary upload failed:",
+              uploadError.message || uploadError,
+            ); // Log only the message
             // Inform the user if image upload fails, and keep them in the same state to retry or skip
             twiml.message(
               t.sendImageOrSkip +
