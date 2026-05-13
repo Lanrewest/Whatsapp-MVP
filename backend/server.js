@@ -20,11 +20,21 @@ const requiredEnvs = [
   "FRONTEND_URL",
 ];
 requiredEnvs.forEach((env) => {
-  if (!process.env[env]) {
-    console.error(`ERROR: Missing required environment variable: ${env}`);
+  const val = process.env[env];
+  if (!val || val.startsWith("your_") || val.includes("_here")) {
+    console.error(
+      `ERROR: Missing or invalid environment variable: ${env}. Please check your .env file.`,
+    );
     process.exit(1);
   }
 });
+
+if (!process.env.CLOUDINARY_URL.startsWith("cloudinary://")) {
+  console.error(
+    "ERROR: CLOUDINARY_URL must start with 'cloudinary://'. Check your .env file.",
+  );
+  process.exit(1);
+}
 
 // Initialize Twilio client once
 const twilioClient = twilio(
