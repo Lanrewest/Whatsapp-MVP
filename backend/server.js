@@ -120,60 +120,9 @@ app.post("/api/request", async (req, res) => {
 });
 
 const HTTP_PORT = process.env.PORT || 5000;
-const HTTPS_PORT = process.env.HTTPS_PORT || 8443; // Default HTTPS port
 
-// Check if SSL certificates are available and if we are in production
-const useHttps =
-  process.env.NODE_ENV === "production" &&
-  process.env.SSL_KEY_PATH &&
-  process.env.SSL_CERT_PATH;
-
-if (useHttps) {
-  try {
-    const privateKey = fs.readFileSync(process.env.SSL_KEY_PATH, "utf8");
-    const certificate = fs.readFileSync(process.env.SSL_CERT_PATH, "utf8");
-    // Optional: If you have a CA bundle, uncomment and add to credentials
-    // const ca = fs.readFileSync(process.env.SSL_CA_PATH, 'utf8');
-    const credentials = { key: privateKey, cert: certificate /*, ca: ca */ };
-
-    const httpsServer = https.createServer(credentials, app);
-
-    httpsServer.listen(HTTPS_PORT, () => {
-      console.log(`HTTPS Server running on port ${HTTPS_PORT}`);
-    });
-
-    // Optional: Redirect HTTP to HTTPS
-    // This creates a separate HTTP server that simply redirects all traffic to HTTPS.
-    // This is good practice to ensure all connections are secure.
-    const httpApp = express();
-    httpApp.get("*", (req, res) => {
-      // Use the correct HTTPS port for redirection
-      res.redirect(
-        `https://${req.headers.host.split(":")[0]}:${HTTPS_PORT}${req.url}`,
-      );
-    });
-    httpApp.listen(HTTP_PORT, () => {
-      console.log(
-        `HTTP Server redirecting all traffic to HTTPS on port ${HTTP_PORT}`,
-      );
-    });
-  } catch (error) {
-    console.error(
-      "Failed to start HTTPS server. Check SSL certificate paths and permissions:",
-      error,
-    );
-    console.warn(
-      `Falling back to HTTP server on port ${HTTP_PORT}. Your site may still show as "dangerous".`,
-    );
-    app.listen(HTTP_PORT, () =>
-      console.log(`Server running on port ${HTTP_PORT}`),
-    );
-  }
-} else {
-  console.warn(
-    "SSL_KEY_PATH or SSL_CERT_PATH not set, or NODE_ENV is not 'production'. Starting HTTP server. Your site may still show as 'dangerous'.",
+app.listen(HTTP_PORT, () => {
+  console.log(
+    `Server running in ${process.env.NODE_ENV || "development"} mode on port ${HTTP_PORT}`,
   );
-  app.listen(HTTP_PORT, () =>
-    console.log(`Server running on port ${HTTP_PORT}`),
-  );
-}
+});

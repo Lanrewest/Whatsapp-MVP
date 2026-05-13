@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const twilio = require("twilio");
 const MessagingResponse = twilio.twiml.MessagingResponse;
+const cloudinary = require("cloudinary").v2; // Import Cloudinary SDK
 
 const User = require("../models/User");
 const Product = require("../models/Product");
@@ -17,6 +18,9 @@ function slugify(text) {
     .replace(/-+/g, "-") // Replace multiple - with single -
     .replace(/^-+|-+$/g, ""); // Trim - from start/end
 }
+
+// Configure Cloudinary using the URL from environment variables
+cloudinary.config(); // Automatically picks up CLOUDINARY_URL from process.env
 
 // Bilingual prompts
 const prompts = {
@@ -228,11 +232,39 @@ router.post("/", async (req, res) => {
         if (msg.toUpperCase() === "SKIP") {
           imageUrl = "";
         } else if (mediaUrl) {
-          imageUrl = mediaUrl;
+          // Upload the image from Twilio's temporary URL to Cloudinary
+          try {
+            // Twilio media URLs are protected. We inject credentials via Basic Auth
+            // so Cloudinary has permission to download the file.
+            const authenticatedMediaUrl = mediaUrl.replace(
+              "https://api.twilio.com",
+              `https://${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}@api.twilio.com`,
+            );
+
+            console.log("Attempting to upload media to Cloudinary...");
+            const uploadResult = await cloudinary.uploader.upload(
+              authenticatedMediaUrl,
+              {
+                folder: "arewamarket_products", // Optional: organize uploads in a specific folder
+                // You can add other Cloudinary options here, like public_id, transformations, etc.
+              },
+            );
+            imageUrl = uploadResult.secure_url; // Get the permanent secure URL
+            console.log("Image uploaded to Cloudinary successfully:", imageUrl);
+          } catch (uploadError) {
+            console.error("Cloudinary upload failed:", uploadError);
+            // Inform the user if image upload fails, and keep them in the same state to retry or skip
+            twiml.message(
+              t.sendImageOrSkip +
+                " (Image upload failed. Please try again or type SKIP)",
+            );
+            return res.type("text/xml").send(twiml.toString());
+          }
         } else {
           twiml.message(t.sendImageOrSkip);
           return res.type("text/xml").send(twiml.toString());
         }
+
         await Product.create({
           traderSlug: user.slug, // Save the trader's slug with the product
           traderPhone: from,
