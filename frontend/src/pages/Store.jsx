@@ -3,7 +3,10 @@ import { useParams, Link } from "react-router-dom";
 import Logo from "../Logo";
 
 export default function Store() {
-  const { slug } = useParams();
+  // Capture both possible names to match Router definitions like :slug or :phone
+  const { slug, phone } = useParams();
+  const identifier = slug || phone;
+
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   const [products, setProducts] = useState([]);
@@ -49,13 +52,13 @@ export default function Store() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!slug) return;
+      if (!identifier) return;
       setLoading(true);
       setFetchError(null);
       try {
         const [prodRes, traderRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/products/${slug}`),
-          fetch(`${API_BASE_URL}/api/trader/${slug}`)
+          fetch(`${API_BASE_URL}/api/products/${identifier}`),
+          fetch(`${API_BASE_URL}/api/trader/${identifier}`)
         ]);
 
         if (!prodRes.ok) throw new Error("Failed to load products");
@@ -73,7 +76,7 @@ export default function Store() {
         }
 
         // Analytics: Track store visit
-        fetch(`${API_BASE_URL}/api/analytics/track?page=store&slug=${slug}`, { method: 'POST' })
+        fetch(`${API_BASE_URL}/api/analytics/track?page=store&slug=${identifier}`, { method: 'POST' })
           .catch(() => {});
       } catch (err) {
         console.error("Error loading store:", err);
