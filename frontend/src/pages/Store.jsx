@@ -86,7 +86,7 @@ export default function Store() {
       }
     };
     fetchData();
-  }, [slug]);
+  }, [identifier]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

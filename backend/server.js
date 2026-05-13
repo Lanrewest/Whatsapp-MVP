@@ -1,16 +1,14 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, ".env") });
+
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-
-const webhook = require("./routes/webhook");
-const Product = require("./models/Product");
-const Visit = require("./models/Visit"); // Import the new Visit model
-const User = require("./models/User");
 const twilio = require("twilio");
 
 // Security Check: Ensure all required environment variables are loaded
+// These must be checked BEFORE importing the routes that use them (like Cloudinary)
 const requiredEnvs = [
   "MONGO_URI",
   "TWILIO_ACCOUNT_SID",
@@ -21,9 +19,13 @@ const requiredEnvs = [
 ];
 requiredEnvs.forEach((env) => {
   const val = process.env[env];
-  if (!val || val.startsWith("your_") || val.includes("_here")) {
+  if (!val) {
+    console.error(`ERROR: Missing required environment variable: ${env}`);
+    process.exit(1);
+  }
+  if (val.startsWith("your_") || val.includes("_here")) {
     console.error(
-      `ERROR: Missing or invalid environment variable: ${env}. Please check your .env file.`,
+      `ERROR: Environment variable ${env} still contains a placeholder value. Please update your .env file with real credentials.`,
     );
     process.exit(1);
   }
@@ -35,6 +37,11 @@ if (!process.env.CLOUDINARY_URL.startsWith("cloudinary://")) {
   );
   process.exit(1);
 }
+
+const webhook = require("./routes/webhook");
+const Product = require("./models/Product");
+const Visit = require("./models/Visit");
+const User = require("./models/User");
 
 // Initialize Twilio client once
 const twilioClient = twilio(
