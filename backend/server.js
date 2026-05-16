@@ -65,11 +65,8 @@ app.use(bodyParser.json());
 
 mongoose
   .connect(process.env.MONGO_URI, {
-    // These options help with connection stability
-    serverSelectionTimeoutMS: 10000, // Wait longer for initial selection
-    connectTimeoutMS: 20000, // Allow more time for handshake
-    socketTimeoutMS: 45000, // Prevent socket hangup
-    family: 4, // Force IPv4 (sometimes resolves ETIMEOUT)
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
   })
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
