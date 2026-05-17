@@ -19,6 +19,10 @@ export default function Store() {
   const [fetchError, setFetchError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [feedbackComment, setFeedbackComment] = useState("");
+
   const addToCart = (product) => {
     setCart(prev => {
       const current = prev[product._id] || { ...product, qty: 0 };
@@ -122,6 +126,7 @@ export default function Store() {
     setStatus("Redirecting to WhatsApp...");
     setCart({});
     setCustomerName("");
+    setShowFeedback(true); // Trigger feedback form after checkout
     setCustomerRequest("");
   };
 
@@ -132,6 +137,28 @@ export default function Store() {
   if (fetchError) {
     return <div style={{ textAlign: "center", padding: 50, color: "red" }}>Error loading store: {fetchError}. Please ensure the backend is running and accessible.</div>;
   }
+
+  const submitFeedback = async () => {
+    if (!trader) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          traderPhone: trader.phone,
+          traderSlug: trader.slug,
+          customerName: customerName || "Anonymous",
+          rating,
+          comment: feedbackComment
+        })
+      });
+      alert("Thank you for your feedback!");
+      setShowFeedback(false);
+      setFeedbackComment("");
+    } catch (err) {
+      console.error("Failed to send feedback");
+    }
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#f7f7f7", padding: 24 }}>
@@ -224,6 +251,31 @@ export default function Store() {
             {status && <div style={{ color: status.includes("Redirecting") ? "green" : "red", textAlign: 'center' }}>{status}</div>}
           </form>
         </section>
+
+        {showFeedback && (
+          <section style={{ marginTop: 32, padding: 20, background: '#fff', borderRadius: 12, border: '2px solid #25d366' }}>
+            <h3 style={{ margin: 0 }}>How was your experience?</h3>
+            <p style={{ fontSize: '0.9rem', color: '#666' }}>Your feedback helps {trader?.companyName} grow!</p>
+            <div style={{ display: 'flex', gap: 10, margin: '15px 0' }}>
+              {[1, 2, 3, 4, 5].map(num => (
+                <button 
+                  key={num} 
+                  onClick={() => setRating(num)} 
+                  style={{ padding: '8px 12px', borderRadius: '50%', border: '1px solid #ccc', background: rating >= num ? '#ffc107' : '#fff', cursor: 'pointer' }}
+                >
+                  {num}
+                </button>
+              ))}
+            </div>
+            <textarea 
+              placeholder="Leave a comment (optional)" 
+              value={feedbackComment} 
+              onChange={e => setFeedbackComment(e.target.value)}
+              style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ccc', marginBottom: 10, boxSizing: 'border-box' }}
+            />
+            <button onClick={submitFeedback} style={{ ...btnAdd, width: '100%', padding: '10px' }}>Submit Feedback</button>
+          </section>
+        )}
       </div>
 
       {/* Product Details Modal */}

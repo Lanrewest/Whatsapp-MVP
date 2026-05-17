@@ -8,6 +8,7 @@ export default function AdminDashboard() {
     totalProducts: 0,
     landingVisits: 0,
     storeVisits: 0,
+    feedback: [],
   });
   const [loading, setLoading] = useState(true);
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -121,6 +122,28 @@ export default function AdminDashboard() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginTop: '2rem' }}>
+        <h3>Latest Customer Feedback</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+          {stats.feedback?.length === 0 ? (
+            <p>No feedback received yet.</p>
+          ) : (
+            stats.feedback?.map(f => (
+              <div key={f._id} style={{ padding: '1rem', border: '1px solid #eee', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                  <strong>{f.customerName || 'Anonymous'}</strong>
+                  <span style={{ color: '#ffc107' }}>{'★'.repeat(f.rating)}</span>
+                </div>
+                <p style={{ margin: '5px 0', fontSize: '0.9rem' }}>{f.comment}</p>
+                <div style={{ fontSize: '0.8rem', color: '#999' }}>
+                  For Trader: {f.traderPhone} ({f.traderSlug}) • {new Date(f.createdAt).toLocaleDateString()}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
