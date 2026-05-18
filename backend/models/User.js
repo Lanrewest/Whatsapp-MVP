@@ -13,6 +13,7 @@ const UserSchema = new mongoose.Schema(
       name: String,
       price: Number,
     },
+    isVerified: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

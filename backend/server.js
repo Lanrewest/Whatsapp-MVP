@@ -108,8 +108,21 @@ app.get("/api/products/:key", async (req, res) => {
 
 // Get all products for the general store
 app.get("/api/products", async (req, res) => {
-  const products = await Product.find({});
-  res.json(products);
+  try {
+    const products = await Product.find({}).lean();
+    const traders = await User.find({ isVerified: true }, "phone isVerified");
+
+    // Map through products and attach verification status if the trader is verified
+    const verifiedPhones = new Set(traders.map((t) => t.phone));
+    const augmentedProducts = products.map((p) => ({
+      ...p,
+      isVerified: verifiedPhones.has(p.traderPhone),
+    }));
+
+    res.json(augmentedProducts);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
 });
 
 // Get trader info by phone or slug
