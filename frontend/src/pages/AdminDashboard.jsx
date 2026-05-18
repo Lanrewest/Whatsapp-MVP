@@ -33,8 +33,10 @@ export default function AdminDashboard() {
     setLoading(true); // Trigger loading screen for visual confirmation
     try {
       const res = await fetch(`${API_URL}/api/admin/stats`);
+      if (!res.ok) throw new Error("Could not fetch stats from server");
       const data = await res.json();
-      setStats(data);
+      // Merge the new data into existing state to preserve keys like filteredProducts
+      setStats(prev => ({ ...prev, ...data }));
     } catch (err) {
       // Removed the alert here, as fetchError will be displayed by the conditional rendering below.
       console.error("Failed to fetch admin stats", err);
@@ -52,7 +54,7 @@ export default function AdminDashboard() {
 
   // ✅ FIXED: Now watches search term and product data
   useEffect(() => {
-    if (stats.products.length > 0) {
+    if (stats.products && stats.products.length > 0) {
       const lowercasedSearchTerm = productSearchTerm.toLowerCase();
       const filtered = stats.products.filter(p => p.name.toLowerCase().includes(lowercasedSearchTerm) || p.traderPhone.includes(lowercasedSearchTerm));
       setStats(prevStats => ({ ...prevStats, filteredProducts: filtered }));
@@ -198,7 +200,7 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {stats.traders.map(t => (
+              {(stats.traders || []).map(t => (
                 <tr key={t._id} style={{ borderBottom: '1px solid #eee' }}>
                   <td style={{ padding: '12px' }}>{t.companyName}</td>
                   <td>{t.phone}</td>
@@ -242,7 +244,7 @@ export default function AdminDashboard() {
         </div>
 
         <div style={{ overflowX: 'auto' }}>
-          {productSearchTerm === "" && stats.filteredProducts.length > 5 ? (
+          {productSearchTerm === "" && (stats.filteredProducts || []).length > 5 ? (
             <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
               Showing 5 most recent items. Use the search bar to find more.
             </p>
@@ -258,7 +260,7 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {(productSearchTerm === "" ? stats.products.slice(0, 5) : stats.filteredProducts).map(p => (
+              {(productSearchTerm === "" ? (stats.products || []).slice(0, 5) : (stats.filteredProducts || [])).map(p => (
                 <tr key={p._id} style={{ borderBottom: '1px solid #f1f1f1' }}>
                   <td style={{ padding: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
