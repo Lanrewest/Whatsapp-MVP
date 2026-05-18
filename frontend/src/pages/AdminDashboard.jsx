@@ -9,6 +9,7 @@ export default function AdminDashboard() {
     landingVisits: 0,
     storeVisits: 0,
     feedback: [],
+    products: [],
   });
   const [loading, setLoading] = useState(true);
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -67,6 +68,31 @@ export default function AdminDashboard() {
         console.error(err);
         alert("❌ Delete failed. Check server logs.");
       }
+    }
+  };
+
+  const deleteProduct = async (productId) => {
+    if (window.confirm("Delete this product?")) {
+      try {
+        await fetch(`${API_URL}/api/admin/products/${productId}`, { method: 'DELETE' });
+        fetchStats();
+      } catch (err) { alert("Delete failed"); }
+    }
+  };
+
+  const editProduct = async (product) => {
+    const newName = window.prompt("Edit Product Name:", product.name);
+    const newPrice = window.prompt("Edit Product Price (numbers only):", product.price);
+    
+    if (newName && newPrice) {
+      try {
+        await fetch(`${API_URL}/api/admin/products/${product._id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName, price: Number(newPrice) })
+        });
+        fetchStats();
+      } catch (err) { alert("Update failed"); }
     }
   };
 
@@ -171,6 +197,41 @@ export default function AdminDashboard() {
                       {t.isVerified ? 'Unverify' : 'Verify'}
                     </button>
                     <button onClick={() => deleteTrader(t._id)} style={btnStyle('#ff4d4d', 'white')}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Products Management Section */}
+      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden', marginTop: '2rem' }}>
+        <h3>Products Management</h3>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem', minWidth: '600px' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
+                <th style={{ padding: '12px' }}>Product</th>
+                <th>Price</th>
+                <th>Trader Phone</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.products?.map(p => (
+                <tr key={p._id} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {p.imageUrl && <img src={p.imageUrl} alt="" style={{ width: '30px', height: '30px', borderRadius: '4px', objectFit: 'cover' }} />}
+                      {p.name}
+                    </div>
+                  </td>
+                  <td>₦{p.price.toLocaleString()}</td>
+                  <td style={{ fontSize: '0.8rem' }}>{p.traderPhone}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <button onClick={() => editProduct(p)} style={btnStyle('#1d9bf0')}>Edit</button>
+                    <button onClick={() => deleteProduct(p._id)} style={btnStyle('#ff4d4d')}>Delete</button>
                   </td>
                 </tr>
               ))}
