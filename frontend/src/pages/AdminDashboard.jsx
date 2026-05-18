@@ -10,6 +10,7 @@ export default function AdminDashboard() {
     storeVisits: 0,
     feedback: [],
     products: [],
+    filteredProducts: [], // New state to hold filtered products
   });
   const [loading, setLoading] = useState(true);
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -17,6 +18,7 @@ export default function AdminDashboard() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [productSearchTerm, setProductSearchTerm] = useState(""); // New state for product search
   const handleLogin = (e) => {
     e.preventDefault();
     // Simple static credentials check as requested
@@ -34,6 +36,7 @@ export default function AdminDashboard() {
       const data = await res.json();
       setStats(data);
     } catch (err) {
+      // Removed the alert here, as fetchError will be displayed by the conditional rendering below.
       console.error("Failed to fetch admin stats", err);
       alert("❌ Connection Error: Could not reach the server at " + API_URL);
     } finally {
@@ -44,6 +47,15 @@ export default function AdminDashboard() {
   useEffect(() => { 
     if (isAuthorized) {
       fetchStats(); 
+    }
+  }, [isAuthorized]);
+
+  // Effect to filter products when search term or products data changes
+  useEffect(() => {
+    if (stats.products) {
+      const lowercasedSearchTerm = productSearchTerm.toLowerCase();
+      const filtered = stats.products.filter(p => p.name.toLowerCase().includes(lowercasedSearchTerm) || p.traderPhone.includes(lowercasedSearchTerm));
+      setStats(prevStats => ({ ...prevStats, filteredProducts: filtered }));
     }
   }, [isAuthorized]);
 
@@ -172,6 +184,14 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Product Search Input */}
+      <div style={{ background: '#fff', borderRadius: '12px', padding: '1rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginTop: '2rem', display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <h3 style={{ margin: 0, whiteSpace: 'nowrap' }}>Search Products:</h3>
+        <input type="text" placeholder="Search by name or phone..." value={productSearchTerm} onChange={e => setProductSearchTerm(e.target.value)}
+          style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', outline: 'none' }}
+        />
+      </div>
+
       <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         <h3>Traders Management</h3>
         <div style={{ overflowX: 'auto' }}>
@@ -219,7 +239,7 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {stats.products?.map(p => (
+              {stats.filteredProducts?.map(p => (
                 <tr key={p._id} style={{ borderBottom: '1px solid #eee' }}>
                   <td style={{ padding: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
