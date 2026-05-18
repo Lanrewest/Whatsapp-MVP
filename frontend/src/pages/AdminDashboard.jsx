@@ -87,11 +87,11 @@ export default function AdminDashboard() {
   if (loading) return <div style={{ padding: 50, textAlign: 'center' }}>Loading Admin Panel...</div>;
 
   return (
-    <div style={{ padding: '2rem', background: '#f4f7f6', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+    <div style={{ padding: '1rem', background: '#f4f7f6', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <Logo width="150" height="40" />
-          <h1>Super Admin Control</h1>
+          <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Super Admin</h1>
         </div>
         <button 
           onClick={fetchStats} 
@@ -107,35 +107,76 @@ export default function AdminDashboard() {
         <StatCard label="Store Views" value={stats.storeVisits || 0} />
       </div>
 
-      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+      {/* Visual Analytics Section */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div style={chartCardStyle}>
+          <h3>Traffic Engagement</h3>
+          <p style={{ fontSize: '0.8rem', color: '#666' }}>Landing vs Store Views</p>
+          <div style={{ marginTop: '20px' }}>
+            <ProgressBar 
+              label="Landing Page" 
+              value={stats.landingVisits} 
+              total={stats.landingVisits + stats.storeVisits} 
+              color="#075e54" 
+            />
+            <ProgressBar 
+              label="Store Views" 
+              value={stats.storeVisits} 
+              total={stats.landingVisits + stats.storeVisits} 
+              color="#25d366" 
+            />
+          </div>
+        </div>
+        
+        <div style={chartCardStyle}>
+          <h3>Inventory Scale</h3>
+          <p style={{ fontSize: '0.8rem', color: '#666' }}>Traders vs Total Products</p>
+          <div style={{ marginTop: '20px' }}>
+            <ProgressBar 
+              label="Traders" 
+              value={stats.totalUsers} 
+              total={stats.totalProducts || 1} 
+              color="#1d9bf0" 
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginTop: '10px' }}>
+              <span>Avg. Products per Trader:</span>
+              <strong>{(stats.totalProducts / (stats.totalUsers || 1)).toFixed(1)}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         <h3>Traders Management</h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
-              <th style={{ padding: '12px' }}>Company</th>
-              <th>Phone</th>
-              <th>Address</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stats.traders.map(t => (
-              <tr key={t._id} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '12px' }}>{t.companyName}</td>
-                <td>{t.phone}</td>
-                <td>{t.address || 'N/A'}</td>
-                <td>{t.isVerified ? '✅ Verified' : '❌ Unverified'}</td>
-                <td>
-                  <button onClick={() => toggleVerify(t._id)} style={btnStyle(t.isVerified ? '#666' : '#25d366')}>
-                    {t.isVerified ? 'Unverify' : 'Verify'}
-                  </button>
-                  <button onClick={() => deleteTrader(t._id)} style={btnStyle('#ff4d4d', 'white')}>Delete</button>
-                </td>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem', minWidth: '600px' }}>
+            <thead>
+              <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
+                <th style={{ padding: '12px' }}>Company</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Status</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {stats.traders.map(t => (
+                <tr key={t._id} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '12px' }}>{t.companyName}</td>
+                  <td>{t.phone}</td>
+                  <td>{t.address || 'N/A'}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{t.isVerified ? '✅ Verified' : '❌ Unverified'}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <button onClick={() => toggleVerify(t._id)} style={btnStyle(t.isVerified ? '#666' : '#25d366')}>
+                      {t.isVerified ? 'Unverify' : 'Verify'}
+                    </button>
+                    <button onClick={() => deleteTrader(t._id)} style={btnStyle('#ff4d4d', 'white')}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginTop: '2rem' }}>
@@ -171,6 +212,30 @@ function StatCard({ label, value }) {
     </div>
   );
 }
+
+function ProgressBar({ label, value, total, color }) {
+  const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+  return (
+    <div style={{ marginBottom: '15px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '0.9rem' }}>
+        <span>{label}</span>
+        <strong>{value} ({percentage}%)</strong>
+      </div>
+      <div style={{ width: '100%', background: '#eee', borderRadius: '10px', height: '10px', overflow: 'hidden' }}>
+        <div style={{ width: `${percentage}%`, background: color, height: '100%', transition: 'width 0.5s ease-in-out' }}></div>
+      </div>
+    </div>
+  );
+}
+
+const chartCardStyle = {
+  background: '#fff',
+  padding: '1.5rem',
+  borderRadius: '12px',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+  display: 'flex',
+  flexDirection: 'column'
+};
 
 function btnStyle(bg, color = 'white') {
   return {
