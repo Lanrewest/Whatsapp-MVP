@@ -133,7 +133,7 @@ export default function AdminDashboard() {
             stats.feedback?.map(f => (
               <div key={f._id} style={{ padding: '1rem', border: '1px solid #eee', borderRadius: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                  <strong>{f.customerName || 'Anonymous'}</strong>
+                  <strong>{f.type === 'trader' ? '🏪 Trader Feedback' : (f.customerName || '👤 Customer')}</strong>
                   <span style={{ color: '#ffc107' }}>{'★'.repeat(f.rating)}</span>
                 </div>
                 <p style={{ margin: '5px 0', fontSize: '0.9rem' }}>{f.comment}</p>

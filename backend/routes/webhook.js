@@ -6,6 +6,7 @@ const cloudinary = require("cloudinary").v2; // Import Cloudinary SDK
 
 const User = require("../models/User");
 const Product = require("../models/Product");
+const Feedback = require("../models/Feedback");
 
 // Helper to create a URL-friendly slug from company name
 function slugify(text) {
@@ -43,12 +44,16 @@ const prompts = {
     replyHi: "Reply Hi to start",
     welcomeBack: (name) => `Welcome back, ${name}! What would you like to do?`,
     mainMenu:
-      "1. Add Product\n2. View My Store\n3. Update Address\n4. Delete Product",
+      "1. Add Product\n2. View My Store\n3. Update Address\n4. Delete Product\n5. Give Feedback",
     productNotFound: "Product not found.",
     askNewAddress: "Please enter your new company address:",
     addressUpdated: "✅ Address updated successfully!",
     askDeleteProduct: "Enter the exact name of the product you want to delete:",
     productDeleted: "🗑️ Product deleted successfully.",
+    askFeedback:
+      "We value your input! Please type your feedback/suggestions for ArewaMarket below:",
+    feedbackReceived:
+      "🙏 Thank you! Your feedback has been recorded. Our team will look into it.",
   },
   ha: {
     welcome:
@@ -69,12 +74,15 @@ const prompts = {
     replyHi: "Amsa da Hi don farawa",
     welcomeBack: (name) => `Barka da dawowa, ${name}! Me kake son yi?`,
     mainMenu:
-      "1. Ƙara Kaya\n2. Duba Shagona\n3. Gyara Adireshin Kamfani\n4. Goge Kaya",
+      "1. Ƙara Kaya\n2. Duba Shagona\n3. Gyara Adireshin Kamfani\n4. Goge Kaya\n5. Ba da Rahoto/Shawara",
     productNotFound: "Ba a sami kaya ba.",
     askNewAddress: "Da fatan za a shigar da sabon adireshin kamfani:",
     addressUpdated: "✅ An gyara adireshin kamfani cikin nasara!",
     askDeleteProduct: "Shigar da ainihin sunan kayan da kake son gogewa:",
     productDeleted: "🗑️ An goge kayan cikin nasara.",
+    askFeedback:
+      "Muna daraja ra'ayin ku! Da fatan za a rubuta shawara ko korafi game da ArewaMarket a kasa:",
+    feedbackReceived: "🙏 Mun gode! An karbi ra'ayin ku. Za mu duba shi.",
   },
 };
 
@@ -212,6 +220,11 @@ router.post("/", async (req, res) => {
           await user.save();
           twiml.message(t.askDeleteProduct);
           return res.type("text/xml").send(twiml.toString());
+        } else if (msg === "5") {
+          user.state = "awaiting_feedback";
+          await user.save();
+          twiml.message(t.askFeedback);
+          return res.type("text/xml").send(twiml.toString());
         }
         break;
 
@@ -310,6 +323,19 @@ router.post("/", async (req, res) => {
         await user.save();
         const feedback = result ? t.productDeleted : t.productNotFound;
         twiml.message(feedback + "\n" + t.mainMenu);
+        return res.type("text/xml").send(twiml.toString());
+
+      case "awaiting_feedback":
+        await Feedback.create({
+          traderPhone: from,
+          traderSlug: user.slug,
+          rating: 5, // Default for text-only feedback
+          comment: msg,
+          type: "trader",
+        });
+        user.state = "main_menu";
+        await user.save();
+        twiml.message(t.feedbackReceived + "\n" + t.mainMenu);
         return res.type("text/xml").send(twiml.toString());
     }
 

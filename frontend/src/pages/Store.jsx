@@ -97,8 +97,8 @@ export default function Store() {
     if (!trader || cartItems.length === 0) return;
 
     // Construct Order Message
-    let orderSummary = cartItems.map(item => `- ${item.name} (x${item.qty}): ₦${item.price * item.qty}`).join('\n');
-    const fullMessage = `Hello ${trader.companyName || 'Trader'},\n\nI'm ${customerName}. I'd like to place an order for:\n\n${orderSummary}\n\n*Total: ₦${cartTotal}*\n\nAdditional Request: ${customerRequest}`;
+    let orderSummary = cartItems.map(item => `- ${item.name} (x${item.qty}): ₦${(item.price * item.qty).toLocaleString()}`).join('\n');
+    const fullMessage = `Hello ${trader.companyName || 'Trader'},\n\nI'm ${customerName}. I'd like to place an order for:\n\n${orderSummary}\n\n*Total: ₦${cartTotal.toLocaleString()}*\n\nAdditional Request: ${customerRequest}`;
 
     setStatus("Sending...");
     
@@ -189,7 +189,7 @@ export default function Store() {
                 {p.imageUrl && <img src={p.imageUrl} alt={p.name} style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: 8 }} />}
                 <div style={{ flex: 1 }}>
                   <h3 style={{ margin: "0 0 4px", color: "#075e54" }}>{p.name}</h3>
-                  <p style={{ margin: 0, color: "#222", fontWeight: 'bold' }}>₦{p.price}</p>
+                  <p style={{ margin: 0, color: "#222", fontWeight: 'bold' }}>₦{p.price.toLocaleString()}</p>
                 </div>
                 <div className="product-actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                    <button onClick={() => setSelectedProduct(p)} style={btnDetails}>Details</button>
@@ -214,12 +214,12 @@ export default function Store() {
             {cartItems.map(item => (
               <div key={item._id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: 4 }}>
                 <span>{item.name} x {item.qty}</span>
-                <span>₦{item.price * item.qty}</span>
+                <span>₦{(item.price * item.qty).toLocaleString()}</span>
               </div>
             ))}
             <div style={{ borderTop: '1px solid #ccc', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
               <span>Total:</span>
-              <span>₦{cartTotal}</span>
+              <span>₦{cartTotal.toLocaleString()}</span>
             </div>
           </section>
         )}
@@ -293,7 +293,7 @@ export default function Store() {
             )}
             <div style={{ marginBottom: '20px', textAlign: 'left' }}>
               <p style={{ margin: '8px 0', fontSize: '1.1rem' }}><strong>{selectedProduct.name}</strong></p>
-              <p style={{ margin: '8px 0', color: '#075e54', fontWeight: 'bold', fontSize: '1.2rem' }}>₦{selectedProduct.price}</p>
+              <p style={{ margin: '8px 0', color: '#075e54', fontWeight: 'bold', fontSize: '1.2rem' }}>₦{selectedProduct.price.toLocaleString()}</p>
               <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '12px 0' }} />
               <p style={{ margin: '4px 0', color: '#666', fontSize: '0.9rem' }}>Sold By: <strong>{trader?.companyName}</strong></p>
               {trader?.address && <p style={{ margin: '4px 0', color: '#666', fontSize: '0.9rem' }}>Location: {trader.address}</p>}
