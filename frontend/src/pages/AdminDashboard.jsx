@@ -27,12 +27,14 @@ export default function AdminDashboard() {
   };
 
   const fetchStats = async () => {
+    setLoading(true); // Trigger loading screen for visual confirmation
     try {
       const res = await fetch(`${API_URL}/api/admin/stats`);
       const data = await res.json();
       setStats(data);
     } catch (err) {
-      console.error("Failed to fetch admin stats");
+      console.error("Failed to fetch admin stats", err);
+      alert("❌ Connection Error: Could not reach the server at " + API_URL);
     } finally {
       setLoading(false);
     }
@@ -45,14 +47,26 @@ export default function AdminDashboard() {
   }, [isAuthorized]);
 
   const toggleVerify = async (userId) => {
-    await fetch(`${API_URL}/api/admin/verify/${userId}`, { method: 'PATCH' });
-    fetchStats();
+    try {
+      const res = await fetch(`${API_URL}/api/admin/verify/${userId}`, { method: 'PATCH' });
+      if (!res.ok) throw new Error("Server returned an error");
+      fetchStats();
+    } catch (err) {
+      console.error(err);
+      alert("❌ Verification failed. Ensure backend is running.");
+    }
   };
 
   const deleteTrader = async (userId) => {
     if (window.confirm("Are you sure? This will delete the trader and all products.")) {
-      await fetch(`${API_URL}/api/admin/trader/${userId}`, { method: 'DELETE' });
-      fetchStats();
+      try {
+        const res = await fetch(`${API_URL}/api/admin/trader/${userId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error("Delete failed");
+        fetchStats();
+      } catch (err) {
+        console.error(err);
+        alert("❌ Delete failed. Check server logs.");
+      }
     }
   };
 
