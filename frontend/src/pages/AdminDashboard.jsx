@@ -50,14 +50,14 @@ export default function AdminDashboard() {
     }
   }, [isAuthorized]);
 
-  // Effect to filter products when search term or products data changes
+  // ✅ FIXED: Now watches search term and product data
   useEffect(() => {
-    if (stats.products) {
+    if (stats.products.length > 0) {
       const lowercasedSearchTerm = productSearchTerm.toLowerCase();
       const filtered = stats.products.filter(p => p.name.toLowerCase().includes(lowercasedSearchTerm) || p.traderPhone.includes(lowercasedSearchTerm));
       setStats(prevStats => ({ ...prevStats, filteredProducts: filtered }));
     }
-  }, [isAuthorized]);
+  }, [productSearchTerm, stats.products]); // Dependency array fixed
 
   const toggleVerify = async (userId) => {
     try {
@@ -184,14 +184,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Product Search Input */}
-      <div style={{ background: '#fff', borderRadius: '12px', padding: '1rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginTop: '2rem', display: 'flex', gap: '10px', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, whiteSpace: 'nowrap' }}>Search Products:</h3>
-        <input type="text" placeholder="Search by name or phone..." value={productSearchTerm} onChange={e => setProductSearchTerm(e.target.value)}
-          style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #ccc', outline: 'none' }}
-        />
-      </div>
-
       <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
         <h3>Traders Management</h3>
         <div style={{ overflowX: 'auto' }}>
@@ -226,32 +218,63 @@ export default function AdminDashboard() {
       </div>
 
       {/* Products Management Section */}
-      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden', marginTop: '2rem' }}>
-        <h3>Products Management</h3>
+      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginTop: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <h3 style={{ margin: 0 }}>📦 Products Management</h3>
+          {/* Clean Search Toolbar */}
+          <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+            <input 
+              type="text" 
+              placeholder="🔍 Search product name or trader phone..." 
+              value={productSearchTerm} 
+              onChange={e => setProductSearchTerm(e.target.value)}
+              style={{ 
+                width: '100%', 
+                padding: '10px 15px', 
+                borderRadius: '8px', 
+                border: '2px solid #eef2f1', 
+                background: '#f9fbfb',
+                outline: 'none',
+                fontSize: '0.9rem'
+              }}
+            />
+          </div>
+        </div>
+
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem', minWidth: '600px' }}>
-            <thead>
+          {productSearchTerm === "" && stats.filteredProducts.length > 5 ? (
+            <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
+              Showing 5 most recent items. Use the search bar to find more.
+            </p>
+          ) : null}
+          
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+            <thead style={{ background: '#f8f9fa' }}>
               <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
-                <th style={{ padding: '12px' }}>Product</th>
-                <th>Price</th>
-                <th>Trader Phone</th>
-                <th>Actions</th>
+                <th style={{ padding: '12px' }}>Product Details</th>
+                <th style={{ padding: '12px' }}>Price</th>
+                <th style={{ padding: '12px' }}>Trader</th>
+                <th style={{ padding: '12px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {stats.filteredProducts?.map(p => (
-                <tr key={p._id} style={{ borderBottom: '1px solid #eee' }}>
+              {(productSearchTerm === "" ? stats.products.slice(0, 5) : stats.filteredProducts).map(p => (
+                <tr key={p._id} style={{ borderBottom: '1px solid #f1f1f1' }}>
                   <td style={{ padding: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {p.imageUrl && <img src={p.imageUrl} alt="" style={{ width: '30px', height: '30px', borderRadius: '4px', objectFit: 'cover' }} />}
-                      {p.name}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {p.imageUrl ? (
+                        <img src={p.imageUrl} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#aaa' }}>No Image</div>
+                      )}
+                      <span style={{ fontWeight: 500 }}>{p.name}</span>
                     </div>
                   </td>
-                  <td>₦{p.price.toLocaleString()}</td>
-                  <td style={{ fontSize: '0.8rem' }}>{p.traderPhone}</td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <button onClick={() => editProduct(p)} style={btnStyle('#1d9bf0')}>Edit</button>
-                    <button onClick={() => deleteProduct(p._id)} style={btnStyle('#ff4d4d')}>Delete</button>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#075e54' }}>₦{p.price.toLocaleString()}</td>
+                  <td style={{ padding: '12px', fontSize: '0.85rem', color: '#666' }}>{p.traderPhone}</td>
+                  <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
+                    <button onClick={() => editProduct(p)} style={{ ...btnStyle('#1d9bf0'), padding: '5px 10px' }}>Edit</button>
+                    <button onClick={() => deleteProduct(p._id)} style={{ ...btnStyle('#ff4d4d'), padding: '5px 10px' }}>Delete</button>
                   </td>
                 </tr>
               ))}
