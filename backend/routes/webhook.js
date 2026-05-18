@@ -88,14 +88,22 @@ router.post("/", async (req, res) => {
 
     console.log(`Received message from ${from}: ${msg}`);
 
-    let user = await User.findOne({ phone: from });
+    // Look for the user. We use a regex or check both formats to be safe,
+    // though Twilio usually sends the '+' consistently.
+    let user = await User.findOne({
+      $or: [
+        { phone: from },
+        { phone: from.startsWith("+") ? from.substring(1) : from }, // Match without +
+        { phone: from.startsWith("+") ? from : `+${from}` }, // Match with +
+      ],
+    });
+
     if (!user) {
       console.log(`New user detected: ${from}`);
       user = await User.create({
         phone: from,
         state: "awaiting_language",
         language: "en",
-        currentProduct: { name: "", price: 0 },
       });
     }
 
