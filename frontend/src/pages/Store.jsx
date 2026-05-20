@@ -56,7 +56,10 @@ export default function Store() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!identifier) return;
+      if (!identifier) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setFetchError(null);
       try {

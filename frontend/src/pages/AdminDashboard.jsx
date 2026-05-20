@@ -229,6 +229,7 @@ export default function AdminDashboard() {
                 <th>Phone</th>
                 <th>Address</th>
                 <th>Status</th>
+                <th>Receipt</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -239,6 +240,13 @@ export default function AdminDashboard() {
                   <td>{t.phone}</td>
                   <td>{t.address || 'N/A'}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{t.isVerified ? '✅ Verified' : '❌ Unverified'}</td>
+                  <td>
+                    {t.verificationReceiptUrl ? (
+                      <a href={t.verificationReceiptUrl} target="_blank" rel="noreferrer" style={{ color: '#1d9bf0', fontSize: '0.8rem' }}>View Receipt</a>
+                    ) : (
+                      <span style={{ color: '#ccc', fontSize: '0.8rem' }}>None</span>
+                    )}
+                  </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <button onClick={() => toggleVerify(t._id)} style={btnStyle(t.isVerified ? '#666' : '#25d366')}>
                       {t.isVerified ? 'Unverify' : 'Verify'}
