@@ -164,6 +164,23 @@ app.post("/api/request", async(req, res) => {
 // Get Admin Stats
 app.get("/api/admin/stats", async(req, res) => {
     try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        // Helper for daily aggregation
+        const getDailyTrend = async(Model, matchQuery = {}) => {
+            return await Model.aggregate([
+                { $match: {...matchQuery, createdAt: { $gte: sevenDaysAgo } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        count: { $sum: 1 }
+                    }
+                },
+                { $sort: { "_id": 1 } }
+            ]);
+        };
+
         const totalUsers = await User.countDocuments();
         const totalProducts = await Product.countDocuments();
 
@@ -174,6 +191,13 @@ app.get("/api/admin/stats", async(req, res) => {
         const feedback = await Feedback.find({}).sort({ createdAt: -1 }).limit(50);
         const traders = await User.find({});
         const products = await Product.find({}).sort({ createdAt: -1 });
+
+        // Generate Daily Trends
+        const dailyTraders = await getDailyTrend(User);
+        const dailyProducts = await getDailyTrend(Product);
+        const dailyLanding = await getDailyTrend(Visit, { page: "landing" });
+        const dailyStore = await getDailyTrend(Visit, { page: "store" });
+
         res.json({
             traders,
             products,
@@ -182,6 +206,12 @@ app.get("/api/admin/stats", async(req, res) => {
             feedback,
             landingVisits,
             storeVisits,
+            daily: {
+                traders: dailyTraders,
+                products: dailyProducts,
+                landing: dailyLanding,
+                store: dailyStore
+            }
         });
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch stats" });
