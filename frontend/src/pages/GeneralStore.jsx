@@ -62,6 +62,15 @@ export default function GeneralStore() {
           <p style={{ color: "#666", margin: 0 }}>Browse products from all traders.</p>
         </header>
 
+        <section style={{ marginBottom: 24, padding: '12px', background: '#fff9e6', borderLeft: '4px solid #ffc107', borderRadius: '4px' }}>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: '#856404' }}>
+            <strong>⚠️ Safe Shopping Tip:</strong> ArewaMarket connects you with traders. 
+            Always verify the product and trader details before making any payments. 
+            Transactions are conducted directly between you and the seller via WhatsApp. 
+            ArewaMarket does not handle payments or deliveries.
+          </p>
+        </section>
+
         <section style={{ marginBottom: 24 }}>
           <input
             type="text"

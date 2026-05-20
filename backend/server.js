@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const twilio = require("twilio");
+const crypto = require("crypto");
 
 // Security Check: Ensure all required environment variables are loaded
 // These must be checked BEFORE importing the routes that use them (like Cloudinary)
@@ -16,6 +17,7 @@ const requiredEnvs = [
     "TWILIO_WHATSAPP_NUMBER",
     "CLOUDINARY_URL",
     "FRONTEND_URL",
+    "PAYSTACK_SECRET_KEY",
 ];
 requiredEnvs.forEach((env) => {
     const val = process.env[env];
@@ -229,6 +231,30 @@ app.patch("/api/admin/verify/:id", async(req, res) => {
     } catch (err) {
         res.status(500).json({ error: "Failed to update verification" });
     }
+});
+
+// Paystack Webhook: Automatically verify traders upon payment
+app.post("/api/payments/webhook", async(req, res) => {
+    const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY).update(JSON.stringify(req.body)).digest('hex');
+
+    // Verify the request came from Paystack
+    if (hash !== req.headers['x-paystack-signature']) {
+        return res.status(400).send('Invalid signature');
+    }
+
+    const event = req.body;
+    if (event.event === 'charge.success') {
+        const { phone } = event.data.metadata;
+
+        try {
+            const user = await User.findOneAndUpdate({ phone: phone }, { isVerified: true }, { new: true });
+            console.log(`✅ User ${phone} verified via Paystack payment.`);
+        } catch (err) {
+            console.error("Webhook User Update Error:", err);
+        }
+    }
+
+    res.sendStatus(200);
 });
 
 // Update Product (Admin)

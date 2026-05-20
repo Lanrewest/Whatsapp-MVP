@@ -156,8 +156,6 @@ export default function AdminDashboard() {
       {/* Daily Growth Trends */}
       <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
         <h3 style={{ marginTop: 0 }}>📈 7-Day Activity Trends</h3>
-        <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '20px' }}>Daily counts of new registrations, uploads, and visitors.</p>
-        
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
           <TrendSection 
             title="New Traders" 
@@ -359,10 +357,10 @@ function TrendSection({ title, data, color }) {
   
   return (
     <div style={{ border: '1px solid #eee', padding: '10px', borderRadius: '8px' }}>
-      <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: '#444' }}>{title}</h4>
+      <h4 style={{ margin: '0 0 10px 0', fontSize: '0.8rem', color: '#666' }}>{title}</h4>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '60px' }}>
-        {(data || []).length === 0 ? (
-          <span style={{ fontSize: '0.7rem', color: '#999' }}>No data this week</span>
+        {(!data || data.length === 0) ? (
+          <span style={{ fontSize: '0.7rem', color: '#999' }}>No data</span>
         ) : (
           data.map((day, idx) => (
             <div key={idx} title={`${day._id}: ${day.count}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

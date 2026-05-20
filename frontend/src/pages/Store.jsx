@@ -226,6 +226,11 @@ export default function Store() {
 
         <section style={{ marginTop: 32 }}>
           <h3 id="checkout-form">Finish Your Order</h3>
+          <p style={{ fontSize: '0.8rem', color: '#888', fontStyle: 'italic', marginBottom: '10px' }}>
+            * Note: Clicking below will open a WhatsApp chat with the trader. 
+            ArewaMarket is not responsible for transactions, payments, or product quality. 
+            Please deal directly with the trader responsibly.
+          </p>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
             <input
               type="text"
