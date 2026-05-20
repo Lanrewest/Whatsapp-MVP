@@ -371,7 +371,10 @@ function TrendSection({ title, data, color }) {
           <span style={{ fontSize: '0.7rem', color: '#999' }}>No data</span>
         ) : (
           data.map((day, idx) => (
-            <div key={idx} title={`${day._id}: ${day.count}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div 
+              key={idx} 
+              title={`${new Date(day._id).toDateString()}: ${day.count}`} 
+              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'help' }}>
               <div style={{ 
                 width: '100%', 
                 height: `${(day.count / maxVal) * 100}%`, 

@@ -174,9 +174,17 @@ app.get("/api/admin/stats", async (req, res) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+    // Create an array of the last 7 dates in YYYY-MM-DD format
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      last7Days.push(d.toISOString().split("T")[0]);
+    }
+
     // Helper for daily aggregation
     const getDailyTrend = async (Model, matchQuery = {}) => {
-      return await Model.aggregate([
+      const data = await Model.aggregate([
         { $match: { ...matchQuery, createdAt: { $gte: sevenDaysAgo } } },
         {
           $group: {
@@ -186,6 +194,12 @@ app.get("/api/admin/stats", async (req, res) => {
         },
         { $sort: { _id: 1 } },
       ]);
+
+      // Fill in gaps with 0
+      return last7Days.map((date) => ({
+        _id: date,
+        count: (data.find((d) => d._id === date) || { count: 0 }).count,
+      }));
     };
 
     const totalUsers = await User.countDocuments();
