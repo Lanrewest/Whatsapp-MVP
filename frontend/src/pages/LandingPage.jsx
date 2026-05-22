@@ -119,7 +119,8 @@ const styles = {
 };
 
 export default function LandingPage() {
-  const WHATSAPP_LINK = "https://wa.me/14155238886?text=Join%20themselves-game";
+  // Replace with your actual Twilio WhatsApp Number (e.g., +234...)
+  const WHATSAPP_LINK = `https://wa.me/${process.env.REACT_APP_TWILIO_NUMBER || "14155238886"}?text=Hi%20Arewa%20Connect,%20I%20want%20to%20register%20my%20business`;
 
   useEffect(() => {
     document.title = "Arewa Connect | Digital Storefronts for Northern Traders";

@@ -24,11 +24,14 @@ export default function AdminDashboard() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL || "lanrewese1@gmail.com";
+  const ADMIN_PASS = process.env.REACT_APP_ADMIN_PASSWORD || "123456Crest";
+
   const [productSearchTerm, setProductSearchTerm] = useState(""); // New state for product search
   const handleLogin = (e) => {
     e.preventDefault();
-    // Simple static credentials check as requested
-    if (email === "lanrewese1@gmail.com" && password === "123456Crest") {
+    // Check against environment variables
+    if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
       setIsAuthorized(true);
     } else {
       alert("Invalid admin credentials");
