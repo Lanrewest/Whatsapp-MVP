@@ -17,9 +17,10 @@ export default function GeneralStore() {
       setLoading(true);
       setFetchError(null);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/products`);
+        const apiUrl = `${API_BASE_URL}/api/products`;
+        const response = await fetch(apiUrl);
         if (!response.ok) {
-          throw new Error("Failed to load all products");
+          throw new Error(`API error: ${response.status} at ${apiUrl}`);
         }
         const data = await response.json();
         setAllProducts(data);

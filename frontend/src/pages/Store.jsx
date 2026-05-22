@@ -60,13 +60,15 @@ export default function Store() {
       setLoading(true);
       setFetchError(null);
       try {
+        console.log(`Fetching from: ${API_BASE_URL}/api/products/${identifier}`);
+        
         const [prodRes, traderRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/products/${identifier}`),
           fetch(`${API_BASE_URL}/api/trader/${identifier}`)
         ]);
 
-        if (!prodRes.ok) throw new Error("Failed to load products");
-        if (!traderRes.ok) throw new Error("Failed to load trader info");
+        if (!prodRes.ok) throw new Error(`Products API returned ${prodRes.status}`);
+        if (!traderRes.ok) throw new Error(`Trader API returned ${traderRes.status}`);
 
         const prodData = await prodRes.json();
         const traderData = await traderRes.json();
