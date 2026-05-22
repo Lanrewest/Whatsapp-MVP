@@ -28,12 +28,12 @@ cloudinary.config(); // Automatically picks up CLOUDINARY_URL from process.env
 const prompts = {
     en: {
         welcome: "Welcome to Arewa Connect! Please select your language:\n1. English\n2. Hausa",
-        askCompany: "Please enter your company name:",
-        askAddress: "Please enter your company address:",
+        askCompany: "Please enter your *Company Name* and *Address* separated by a comma.\n\nExample: Alhaji & Sons, No 5 Kano Road",
+        askAddress: "Please enter your company address:", // Fallback
         registrationComplete: "Registration complete! You can now add products.",
         addProduct: "1. Add Product\n2. View My Store",
-        enterProductName: "Enter product name:",
-        enterPrice: "Enter price:",
+        enterProductName: "Enter *Product Name* and *Price* separated by a comma.\n\nExample: Men's Shoes, 5000",
+        enterPrice: "Enter price:", // Fallback
         companyNameTaken: "This company name is already taken. Please choose another one.",
         enterValidPrice: "Enter valid price:",
         sendImageOrSkip: "Send image or type SKIP",
@@ -59,12 +59,12 @@ const prompts = {
     },
     ha: {
         welcome: "Barka da zuwa Arewa Connect! Da fatan za a zaɓi yaren ku:\n1. Turanci\n2. Hausa",
-        askCompany: "Da fatan za a shigar da sunan kamfanin ku:",
-        askAddress: "Da fatan za a shigar da adireshin kamfanin ku:",
+        askCompany: "Shigar da *Sunan Kamfani* da *Adireshin ku* (raba su da 'comma').\n\nMisali: Alhaji & Sons, No 5 Kano Road",
+        askAddress: "Da fatan za a shigar da adireshin kamfanin ku:", // Fallback
         registrationComplete: "Rajista ta kammala! Yanzu zaku iya ƙara kayayyaki.",
         addProduct: "1. Ƙara Kaya\n2. Duba Shagona",
-        enterProductName: "Shigar da sunan kaya:",
-        enterPrice: "Shigar da farashi:",
+        enterProductName: "Shigar da *Sunan Kaya* da *Farashi* (raba su da 'comma').\n\nMisali: Takalmi, 5000",
+        enterPrice: "Shigar da farashi:", // Fallback
         companyNameTaken: "An riga an yi amfani da wannan sunan kamfani. Da fatan za a zaɓi wani.",
         enterValidPrice: "Shigar da sahihin farashi:",
         sendImageOrSkip: "Aika hoto ko rubuta SKIP",
@@ -305,10 +305,22 @@ router.post("/", async(req, res) => {
                 }
 
             case "adding_name":
-                user.currentProduct = {...user.currentProduct, name: msg };
-                user.state = "adding_price";
-                await user.save();
-                twiml.message(t.enterPrice);
+                const prodParts = msg.split(',').map(p => p.trim());
+                const prodName = prodParts[0];
+                const prodPrice = Number(prodParts[1]);
+
+                user.currentProduct = {...user.currentProduct, name: prodName };
+
+                if (prodParts.length >= 2 && !isNaN(prodPrice)) {
+                    user.currentProduct.price = prodPrice;
+                    user.state = "adding_image";
+                    await user.save();
+                    twiml.message(t.sendImageOrSkip);
+                } else {
+                    user.state = "adding_price";
+                    await user.save();
+                    twiml.message(t.enterPrice);
+                }
                 return res.type("text/xml").send(twiml.toString());
 
             case "adding_price":

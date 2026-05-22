@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../Logo";
+import LoadingSpinner from "../LoadingSpinner";
 
 export default function GeneralStore() {
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -45,7 +46,7 @@ export default function GeneralStore() {
   }, [searchTerm, allProducts]);
 
   if (loading) {
-    return <div style={{ textAlign: "center", padding: 50 }}>Loading all stores...</div>;
+    return <LoadingSpinner message="Searching the Marketplace..." />;
   }
 
   if (fetchError) {

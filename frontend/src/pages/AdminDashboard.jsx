@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Logo from "../Logo";
+import LoadingSpinner from "../LoadingSpinner";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -8,6 +9,9 @@ export default function AdminDashboard() {
     totalProducts: 0,
     landingVisits: 0,
     storeVisits: 0,
+    todayLanding: 0,
+    todayStore: 0,
+    hourlyData: [],
     feedback: [],
     products: [],
     filteredProducts: [], // New state to hold filtered products
@@ -16,6 +20,10 @@ export default function AdminDashboard() {
       products: [],
       landing: [],
       store: []
+    },
+    trends: {
+      seven: null,
+      thirty: null
     }
   });
   const [loading, setLoading] = useState(true);
@@ -23,6 +31,8 @@ export default function AdminDashboard() {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [trendRange, setTrendRange] = useState("seven"); // "seven" or "thirty"
 
   const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL || "lanrewese1@gmail.com";
   const ADMIN_PASS = process.env.REACT_APP_ADMIN_PASSWORD || "123456Crest";
@@ -119,6 +129,39 @@ export default function AdminDashboard() {
     }
   };
 
+  const exportToCSV = () => {
+    const dateStr = new Date().toISOString().split('T')[0];
+    
+    // 1. Summary Section
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "AREWA CONNECT ACTIVITY REPORT\n";
+    csvContent += `Generated on: ${dateStr}\n\n`;
+    csvContent += "SUMMARY STATS\n";
+    csvContent += `Total Traders, ${stats.totalUsers}\n`;
+    csvContent += `Total Products, ${stats.totalProducts}\n`;
+    csvContent += `Landing Page Visits, ${stats.landingVisits}\n`;
+    csvContent += `Store Catalog Visits, ${stats.storeVisits}\n\n`;
+
+    // 2. Data Rows
+    const dataRows = [
+      ["DATA LOGS"],
+      ["Category", "Identifier", "Status/Price/Rating", "Timestamp"],
+      ...stats.traders.map(t => ["TRADER", t.companyName, t.isVerified ? "Verified" : "Unverified", new Date(t.createdAt).toLocaleString()]),
+      ...stats.products.map(p => ["PRODUCT", p.name, `N${p.price}`, new Date(p.createdAt).toLocaleString()]),
+      ...stats.feedback.map(f => ["FEEDBACK", f.customerName || "Anonymous", `${f.rating} Stars - ${f.comment.replace(/,/g, ';').replace(/\n/g, ' ')}`, new Date(f.createdAt).toLocaleString()])
+    ];
+    
+    csvContent += dataRows.map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `ArewaConnect_FullReport_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (!isAuthorized) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f4f7f6' }}>
@@ -133,7 +176,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (loading) return <div style={{ padding: 50, textAlign: 'center' }}>Loading Admin Panel...</div>;
+  if (loading) return <LoadingSpinner message="Opening Admin Control Center..." />;
 
   return (
     <div style={{ padding: '1rem', background: '#f4f7f6', minHeight: '100vh', fontFamily: 'sans-serif' }}>
@@ -142,44 +185,84 @@ export default function AdminDashboard() {
           <Logo width="188" height="40" />
           <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Super Admin</h1>
         </div>
-        <button 
-          onClick={fetchStats} 
-          style={{ ...btnStyle('#075e54'), padding: '10px 20px', fontWeight: 'bold' }}>
-          🔄 Refresh Stats
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            onClick={exportToCSV} 
+            style={{ ...btnStyle('#1d9bf0'), padding: '10px 20px', fontWeight: 'bold' }}>
+            📥 Export Full Report (CSV)
+          </button>
+          <button 
+            onClick={fetchStats} 
+            style={{ ...btnStyle('#075e54'), padding: '10px 20px', fontWeight: 'bold' }}>
+            🔄 Refresh Stats
+          </button>
+        </div>
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         <StatCard label="Total Traders" value={stats.totalUsers} />
         <StatCard label="Total Products" value={stats.totalProducts} />
-        <StatCard label="Landing Views" value={stats.landingVisits || 0} />
-        <StatCard label="Store Views" value={stats.storeVisits || 0} />
+        <StatCard label="Landing Page" value={stats.todayLanding || 0} subValue={`Total: ${stats.landingVisits}`} />
+        <StatCard label="Store Views" value={stats.todayStore || 0} subValue={`Total: ${stats.storeVisits}`} />
       </div>
 
       {/* Daily Growth Trends */}
       <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
-        <h3 style={{ marginTop: 0 }}>📈 7-Day Activity Trends</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h3 style={{ margin: 0 }}>📈 Activity Trends</h3>
+          <div style={{ background: '#eee', borderRadius: '8px', padding: '4px' }}>
+            <button 
+              onClick={() => setTrendRange("seven")} 
+              style={{ border: 'none', padding: '5px 15px', borderRadius: '6px', background: trendRange === "seven" ? '#fff' : 'transparent', cursor: 'pointer', fontWeight: trendRange === "seven" ? 'bold' : 'normal' }}>
+              7 Days
+            </button>
+            <button 
+              onClick={() => setTrendRange("thirty")} 
+              style={{ border: 'none', padding: '5px 15px', borderRadius: '6px', background: trendRange === "thirty" ? '#fff' : 'transparent', cursor: 'pointer', fontWeight: trendRange === "thirty" ? 'bold' : 'normal' }}>
+              30 Days
+            </button>
+          </div>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
           <TrendSection 
             title="New Traders" 
-            data={stats.daily?.traders} 
+            data={stats.trends?.[trendRange]?.traders} 
             color="#1d9bf0" 
           />
           <TrendSection 
             title="Products Added" 
-            data={stats.daily?.products} 
+            data={stats.trends?.[trendRange]?.products} 
             color="#075e54" 
           />
           <TrendSection 
             title="Landing Visits" 
-            data={stats.daily?.landing} 
+            data={stats.trends?.[trendRange]?.landing} 
             color="#25d366" 
           />
           <TrendSection 
             title="Store Traffic" 
-            data={stats.daily?.store} 
+            data={stats.trends?.[trendRange]?.store} 
             color="#ffc107" 
           />
+        </div>
+      </div>
+
+      {/* Hourly "Time of Day" Trend */}
+      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
+        <h3 style={{ marginTop: 0 }}>⏰ Peak Activity Hours (Last 24h)</h3>
+        <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '20px' }}>Identify when your users are most active during the day.</p>
+        <div style={{ height: '100px', display: 'flex', alignItems: 'flex-end', gap: '2px' }}>
+          {Array.from({ length: 24 }).map((_, hour) => {
+            const hourData = stats.hourlyData?.find(d => d._id === hour);
+            const count = hourData ? hourData.count : 0;
+            const maxHourly = Math.max(...(stats.hourlyData || []).map(d => d.count), 1);
+            return (
+              <div key={hour} title={`${hour}:00 - ${count} visits`} style={{ flex: 1, background: count > 0 ? '#25d366' : '#f0f0f0', height: `${(count / maxHourly) * 100}%`, minHeight: '4px', borderRadius: '2px' }}></div>
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#999', marginTop: '5px' }}>
+          <span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>11 PM</span>
         </div>
       </div>
 
@@ -354,11 +437,12 @@ export default function AdminDashboard() {
   );
 }
 
-function StatCard({ label, value }) {
+function StatCard({ label, value, subValue }) {
   return (
     <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
       <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>{label}</div>
-      <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#075e54' }}>{value}</div>
+      <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#075e54' }}>{value} <span style={{fontSize: '0.9rem', fontWeight: 'normal'}}>today</span></div>
+      {subValue && <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '5px' }}>{subValue}</div>}
     </div>
   );
 }

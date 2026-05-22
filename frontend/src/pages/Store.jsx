@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Logo from "../Logo";
+import LoadingSpinner from "../LoadingSpinner";
 
 export default function Store() {
   // Capture both possible names to match Router definitions like :slug or :phone
@@ -133,7 +134,7 @@ export default function Store() {
   };
 
   if (loading) {
-    return <div style={{ textAlign: "center", padding: 50 }}>Loading Store...</div>;
+    return <LoadingSpinner message="Entering Storefront..." />;
   }
 
   if (fetchError) {
