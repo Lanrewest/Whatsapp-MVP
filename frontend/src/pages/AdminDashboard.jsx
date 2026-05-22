@@ -34,6 +34,20 @@ export default function AdminDashboard() {
 
   const [trendRange, setTrendRange] = useState("seven"); // "seven" or "thirty"
 
+  // State for collapsible sections
+  const [collapsed, setCollapsed] = useState({
+    trends: false,
+    peakHours: false,
+    engagement: false,
+    traders: false,
+    products: false,
+    feedback: false,
+  });
+
+  const toggleSection = (section) => {
+    setCollapsed(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
   const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL || "lanrewese1@gmail.com";
   const ADMIN_PASS = process.env.REACT_APP_ADMIN_PASSWORD || "123456Crest";
 
@@ -477,6 +491,49 @@ function TrendSection({ title, data, color }) {
   );
 }
 
+function EngagementGraph({ landingData, storeData }) {
+  const maxVal = Math.max(...landingData.map(d => d.count), ...storeData.map(d => d.count), 5);
+  const width = 1000;
+  const height = 200;
+  
+  const getPoints = (data) => {
+    if (!data.length) return "";
+    const step = width / (data.length - 1 || 1);
+    return data.map((d, i) => {
+      const x = i * step;
+      const y = height - (d.count / maxVal) * height;
+      return `${x},${y}`;
+    }).join(" ");
+  };
+
+  return (
+    <div style={{ width: '100%', overflowX: 'auto' }}>
+      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ width: '100%', height: '150px', display: 'block' }}>
+        {/* Grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map(v => (
+          <line key={v} x1="0" y1={height * v} x2={width} y2={height * v} stroke="#eee" strokeWidth="1" />
+        ))}
+        
+        {/* Landing Data Path */}
+        <polyline
+          fill="none"
+          stroke="#075e54"
+          strokeWidth="3"
+          points={getPoints(landingData)}
+        />
+        
+        {/* Store Data Path */}
+        <polyline
+          fill="none"
+          stroke="#25d366"
+          strokeWidth="3"
+          points={getPoints(storeData)}
+        />
+      </svg>
+    </div>
+  );
+}
+
 function ProgressBar({ label, value, total, color }) {
   const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
@@ -491,6 +548,21 @@ function ProgressBar({ label, value, total, color }) {
     </div>
   );
 }
+
+const collapsibleCardStyle = {
+  background: '#fff',
+  borderRadius: '12px',
+  padding: '1.5rem',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+  marginBottom: '2rem',
+};
+
+const sectionHeaderStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  cursor: 'pointer',
+};
 
 const chartCardStyle = {
   background: '#fff',
