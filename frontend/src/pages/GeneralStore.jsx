@@ -12,7 +12,7 @@ export default function GeneralStore() {
   const [fetchError, setFetchError] = useState(null);
 
   useEffect(() => {
-    document.title = "Browse All Products | ArewaMarket";
+    document.title = "Browse All Products | Arewa Connect";
     const fetchAllProducts = async () => {
       setLoading(true);
       setFetchError(null);
@@ -56,7 +56,7 @@ export default function GeneralStore() {
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
         <header style={{ textAlign: "center", marginBottom: 32 }}>
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '1rem' }}>
-            <Logo width="240" height="60" />
+            <Logo width="300" height="60" />
           </Link>
           <h2 style={{ color: "#333", fontSize: "1.5rem", margin: "0 0 4px" }}>General Store Catalog</h2>
           <p style={{ color: "#666", margin: 0 }}>Browse products from all traders.</p>
@@ -64,10 +64,10 @@ export default function GeneralStore() {
 
         <section style={{ marginBottom: 24, padding: '12px', background: '#fff9e6', borderLeft: '4px solid #ffc107', borderRadius: '4px' }}>
           <p style={{ margin: 0, fontSize: '0.85rem', color: '#856404' }}>
-            <strong>⚠️ Safe Shopping Tip:</strong> ArewaMarket connects you with traders. 
+            <strong>⚠️ Safe Shopping Tip:</strong> Arewa Connect connects you with traders. 
             Always verify the product and trader details before making any payments. 
             Transactions are conducted directly between you and the seller via WhatsApp. 
-            ArewaMarket does not handle payments or deliveries.
+            Arewa Connect does not handle payments or deliveries.
           </p>
         </section>
 

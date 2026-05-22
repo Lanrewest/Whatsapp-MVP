@@ -122,6 +122,7 @@ export default function LandingPage() {
   const WHATSAPP_LINK = "https://wa.me/14155238886?text=Join%20themselves-game";
 
   useEffect(() => {
+    document.title = "Arewa Connect | Digital Storefronts for Northern Traders";
     const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
     // Analytics: Track landing page visit
     fetch(`${API_URL}/api/analytics/track?page=landing`, { method: 'POST' })
@@ -157,7 +158,7 @@ export default function LandingPage() {
 
       <nav style={styles.navbar}>
         <Link to="/" style={{ textDecoration: 'none' }}>
-          <Logo width="180" height="45" />
+          <Logo width="225" height="45" />
         </Link>
         <button onClick={handleGetStarted} className="navbar-btn" style={{ ...styles.buttonPrimary, padding: '10px 24px', fontSize: '0.9rem' }}>
           Join Now
@@ -165,8 +166,8 @@ export default function LandingPage() {
       </nav>
 
       <header style={styles.hero}>
-        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="ArewaMarket" className="hero-img" style={{ width: 80, marginBottom: 24 }} />
-        <h1 style={styles.heroTitle}>ArewaMarket</h1>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="Arewa Connect" className="hero-img" style={{ width: 80, marginBottom: 24 }} />
+        <h1 style={styles.heroTitle}>Arewa Connect</h1>
         <h2 style={styles.heroSubtitle}>Digital Storefronts for Northern Traders</h2>
         <button onClick={handleGetStarted} style={styles.buttonPrimary}>
           Get Started for Free
@@ -209,7 +210,7 @@ export default function LandingPage() {
         <section style={styles.ctaSection}>
           <h2 className="cta-title" style={{ fontSize: "2.5rem", marginBottom: 16 }}>Ready to grow your business?</h2>
           <p style={{ fontSize: "1.1rem", marginBottom: 32, opacity: 0.9 }}>
-            Join Northern traders who are making selling easier and faster using ArewaMarket.
+            Join Northern traders who are making selling easier and faster using Arewa Connect.
           </p>
           <button 
             onClick={handleGetStarted}
@@ -220,7 +221,7 @@ export default function LandingPage() {
       </main>
 
       <footer style={styles.footer}>
-        <div style={{ fontWeight: "bold", color: "#075e54", marginBottom: 10 }}>ArewaMarket</div>
+        <div style={{ fontWeight: "bold", color: "#075e54", marginBottom: 10 }}>Arewa Connect</div>
         <p style={{ fontSize: "0.85rem" }}>© {new Date().getFullYear()}. All rights reserved.</p>
         <div style={{ marginTop: 20, fontSize: "0.8rem", color: "#bbb" }}>
           Example Store: <code>/store/08012345678</code>

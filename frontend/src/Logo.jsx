@@ -1,39 +1,31 @@
-import React from "react";
+import React from 'react';
 
-const Logo = ({ width = "200", height = "50", color = "#075e54" }) => {
+const Logo = ({ width = "250", height = "50" }) => {
   return (
     <svg
       width={width}
       height={height}
-      viewBox="0 0 280 60"
+      viewBox="0 0 300 60"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ cursor: "pointer" }}
     >
-      {/* Stylized Arewa Knot Icon */}
-      <path
-        d="M30 10L45 25L30 40L15 25L30 10Z"
-        stroke={color}
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M20 20L40 30"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M40 20L20 30"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      {/* Abstract 'Connection' Icon */}
+      <rect x="5" y="10" width="40" height="40" rx="10" fill="#075E54" />
+      <circle cx="20" cy="25" r="4" fill="#25D366" />
+      <circle cx="30" cy="35" r="4" fill="white" />
+      <line x1="20" y1="25" x2="30" y2="35" stroke="white" strokeWidth="2" strokeLinecap="round" />
       
-      {/* Typography */}
-      <text x="65" y="42" fontFamily="Segoe UI, Tahoma, Geneva, Verdana, sans-serif" fontSize="32" fontWeight="800" fill={color}>Arewa</text>
-      <text x="160" y="42" fontFamily="Segoe UI, Tahoma, Geneva, Verdana, sans-serif" fontSize="32" fontWeight="400" fill="#333">Market</text>
+      {/* Brand Text */}
+      <text 
+        x="55" 
+        y="38" 
+        fontFamily="'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+        fontSize="32" 
+        fontWeight="400" 
+        fill="#333"
+      >
+        Arewa<tspan fontWeight="800" fill="#075E54">Connect</tspan>
+      </text>
     </svg>
   );
 };

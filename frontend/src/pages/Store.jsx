@@ -56,10 +56,7 @@ export default function Store() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!identifier) {
-        setLoading(false);
-        return;
-      }
+      if (!identifier) return;
       setLoading(true);
       setFetchError(null);
       try {
@@ -79,7 +76,7 @@ export default function Store() {
 
         // Update tab name to the Trader's Company Name
         if (traderData?.companyName) {
-          document.title = `${traderData.companyName} | ArewaMarket`;
+          document.title = `${traderData.companyName} | Arewa Connect`;
         }
 
         // Analytics: Track store visit
@@ -168,7 +165,7 @@ export default function Store() {
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
         <header style={{ textAlign: "center", marginBottom: 32 }}>
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '1rem' }}>
-            <Logo width="220" height="55" />
+            <Logo width="275" height="55" />
           </Link>
           {trader ? (
             <div style={{ marginBottom: 16 }}>
@@ -229,6 +226,11 @@ export default function Store() {
 
         <section style={{ marginTop: 32 }}>
           <h3 id="checkout-form">Finish Your Order</h3>
+          <p style={{ fontSize: '0.8rem', color: '#888', fontStyle: 'italic', marginBottom: '10px' }}>
+            * Note: Clicking below will open a WhatsApp chat with the trader. 
+            Arewa Connect is not responsible for transactions, payments, or product quality. 
+            Please deal directly with the trader responsibly.
+          </p>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
             <input
               type="text"

@@ -5,7 +5,7 @@ import Logo from "../Logo";
 export default function NotFound() {
   return (
     <div style={styles.container}>
-      <Logo width="200" height="60" />
+      <Logo width="300" height="60" />
       <div style={{ marginTop: '2rem' }}>
         <img 
           src="https://www.svgrepo.com/show/426192/404-error.svg" 

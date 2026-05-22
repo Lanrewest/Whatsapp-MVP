@@ -119,7 +119,7 @@ export default function AdminDashboard() {
   if (!isAuthorized) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f4f7f6' }}>
-        <Logo width="200" height="60" />
+        <Logo width="300" height="60" />
         <form onSubmit={handleLogin} style={{ background: '#fff', padding: '2rem', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '1rem', width: '300px', marginTop: '20px' }}>
           <h2 style={{ textAlign: 'center', color: '#075e54', margin: 0 }}>Admin Login</h2>
           <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
@@ -136,7 +136,7 @@ export default function AdminDashboard() {
     <div style={{ padding: '1rem', background: '#f4f7f6', minHeight: '100vh', fontFamily: 'sans-serif' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <Logo width="150" height="40" />
+          <Logo width="188" height="40" />
           <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Super Admin</h1>
         </div>
         <button 

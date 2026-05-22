@@ -62,7 +62,7 @@ app.use(
   cors({
     origin: [
       // Ensure your frontend URL is always HTTPS in production
-      process.env.FRONTEND_URL || "https://arewa-market.vercel.app",
+      process.env.FRONTEND_URL || "https://arewaconnect.com.ng",
       "http://localhost:3000",
       "https://localhost:3000", // Add for local HTTPS development
     ],
@@ -97,7 +97,7 @@ mongoose
 
 // Root route to confirm server status
 app.get("/", (req, res) => {
-  res.send("ArewaMarket Backend Server is running!");
+  res.send("Arewa Connect Backend Server is running!");
 });
 
 app.use("/api/webhook", webhook);
@@ -280,8 +280,8 @@ app.post("/api/payments/webhook", async (req, res) => {
       const lang = user.language || "en";
       const successMsg =
         lang === "ha"
-          ? "An kammala biyan kuɗi! Yanzu kai ingantaccen ɗan kasuwa ne ✅. Shagon ka zai nuna alamar tabbatarwa ga kowa."
-          : "Payment successful! You are now a Verified Trader ✅. Your store will now display the verification badge to all customers.";
+          ? "An kammala biyan kuɗi! Yanzu kai ingantaccen ɗan kasuwa ne a Arewa Connect ✅. Shagon ka zai nuna alamar tabbatarwa ga kowa."
+          : "Payment successful! You are now a Verified Trader on Arewa Connect ✅. Your store will now display the verification badge to all customers.";
 
       await twilioClient.messages.create({
         from: process.env.TWILIO_WHATSAPP_NUMBER,
