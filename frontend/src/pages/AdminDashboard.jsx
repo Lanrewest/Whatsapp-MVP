@@ -81,6 +81,7 @@ export default function AdminDashboard() {
 
   useEffect(() => { 
     if (isAuthorized) {
+      document.title = "Admin Dashboard | Arewa Connect";
       fetchStats(); 
     }
   }, [isAuthorized]);
