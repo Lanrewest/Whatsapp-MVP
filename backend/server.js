@@ -66,10 +66,16 @@ app.use(
             "http://localhost:3000",
             "https://localhost:3000",
         ].filter(Boolean),
-    })
+    }),
 );
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(
+    bodyParser.json({
+        verify: (req, res, buf) => {
+            req.rawBody = buf;
+        },
+    }),
+);
 
 mongoose
     .connect(process.env.MONGO_URI, {
@@ -222,8 +228,14 @@ app.get("/api/admin/stats", async(req, res) => {
         const storeVisits = await Visit.countDocuments({ page: "store" });
 
         // Today's specific traffic
-        const todayLanding = await Visit.countDocuments({ page: "landing", createdAt: { $gte: todayStart } });
-        const todayStore = await Visit.countDocuments({ page: "store", createdAt: { $gte: todayStart } });
+        const todayLanding = await Visit.countDocuments({
+            page: "landing",
+            createdAt: { $gte: todayStart },
+        });
+        const todayStore = await Visit.countDocuments({
+            page: "store",
+            createdAt: { $gte: todayStart },
+        });
 
         // Hourly breakdown for the last 24 hours to see "time" trends
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -232,10 +244,10 @@ app.get("/api/admin/stats", async(req, res) => {
             {
                 $group: {
                     _id: { $hour: "$createdAt" },
-                    count: { $sum: 1 }
-                }
+                    count: { $sum: 1 },
+                },
             },
-            { $sort: { "_id": 1 } }
+            { $sort: { _id: 1 } },
         ]);
 
         const feedback = await Feedback.find({}).sort({ createdAt: -1 }).limit(50);
@@ -272,8 +284,8 @@ app.get("/api/admin/stats", async(req, res) => {
             daily: trend7, // Default backward compatibility
             trends: {
                 seven: trend7,
-                thirty: trend30
-            }
+                thirty: trend30,
+            },
         });
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch stats" });
@@ -297,7 +309,7 @@ app.patch("/api/admin/verify/:id", async(req, res) => {
 app.post("/api/payments/webhook", async(req, res) => {
     const hash = crypto
         .createHmac("sha512", process.env.PAYSTACK_SECRET_KEY)
-        .update(JSON.stringify(req.body))
+        .update(req.rawBody)
         .digest("hex");
 
     // Verify the request came from Paystack

@@ -255,6 +255,7 @@ router.post("/", async(req, res) => {
                             "https://api.paystack.co/transaction/initialize", {
                                 email: `${from}@arewaconnect.com.ng`,
                                 amount: 2000 * 100,
+                                callback_url: `${process.env.FRONTEND_URL}/store/${user.slug}`,
                                 metadata: { phone: from },
                             }, {
                                 headers: {
@@ -305,7 +306,7 @@ router.post("/", async(req, res) => {
                 }
 
             case "adding_name":
-                const prodParts = msg.split(',').map(p => p.trim());
+                const prodParts = msg.split(",").map((p) => p.trim());
                 const prodName = prodParts[0];
                 const prodPrice = Number(prodParts[1]);
 
