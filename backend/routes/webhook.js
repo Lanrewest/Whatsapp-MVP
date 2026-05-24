@@ -253,10 +253,10 @@ router.post("/", async(req, res) => {
                     try {
                         const response = await axios.post(
                             "https://api.paystack.co/transaction/initialize", {
-                                email: `${from.replace(/\D/g, "")}@arewaconnect.com.ng`,
+                                email: `${from.replace(/\D/g, "")}@arewaconnect.com.ng`, // "23480..."
                                 amount: 2000 * 100,
                                 callback_url: `${process.env.FRONTEND_URL}/store/${user.slug}`,
-                                metadata: { phone: from.replace(/\D/g, "") },
+                                metadata: { phone: from.replace(/\D/g, "") }, // Send digits only
                             }, {
                                 headers: {
                                     Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,

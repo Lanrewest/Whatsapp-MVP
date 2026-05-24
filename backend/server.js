@@ -325,20 +325,39 @@ app.post("/api/payments/webhook", async(req, res) => {
 
     if (event.event === "charge.success") {
         let metadata = event.data.metadata;
-        
+
         // Defensive: Paystack sometimes sends metadata as a string
         if (typeof metadata === "string" && metadata.trim() !== "") {
             try {
                 metadata = JSON.parse(metadata);
             } catch (e) {
-                console.error("❌ Failed to parse Paystack metadata string:", e.message);
+                console.error(
+                    "❌ Failed to parse Paystack metadata string:",
+                    e.message,
+                );
             }
         }
 
-        const phone = metadata?.phone;
+        // Try to get phone from metadata, fallback to email prefix if metadata fails
+        let phone = metadata ? .phone;
+
+        if (!phone && event.data.customer ? .email) {
+            // If email is +2348071821807@arewaconnect.com.ng, extract the part before @
+            const emailPrefix = event.data.customer.email.split("@")[0];
+            phone = emailPrefix.replace(/\D/g, ""); // Normalize to digits
+            console.log(
+                `ℹ️ Phone missing in metadata, extracted from email: ${phone}`,
+            );
+        }
 
         if (!phone) {
-            console.error("❌ Paystack Webhook Error: No phone number found in metadata.");
+            console.error(
+                "❌ Paystack Webhook Error: No phone number found in metadata or email.",
+            );
+            console.log(
+                "Full Data for Debugging:",
+                JSON.stringify(event.data, null, 2),
+            );
             return res.sendStatus(200);
         }
 
@@ -349,7 +368,11 @@ app.post("/api/payments/webhook", async(req, res) => {
                 $or: [
                     { phone: phone },
                     { phone: `+${phone}` }, // Match if DB has the plus
-                    { phone: phone.startsWith("234") ? `0${phone.substring(3)}` : phone }, // Match local 080...
+                    {
+                        phone: phone.startsWith("234") ? `0${phone.substring(3)}` : phone,
+                    }, // Match local 080...
+                    { phone: phone.startsWith("234") ? phone.substring(3) : phone }, // Match 807...
+                    { phone: `whatsapp:+${phone}` }, // Match Twilio format if stored raw
                 ],
             }, { isVerified: true }, { new: true }, );
 
