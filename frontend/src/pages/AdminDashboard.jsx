@@ -213,7 +213,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div className="stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         <StatCard label="Total Traders" value={stats.totalUsers} />
         <StatCard label="Total Products" value={stats.totalProducts} />
         <StatCard label="Landing Page" value={stats.todayLanding || 0} subValue={`Total: ${stats.landingVisits}`} />
@@ -221,10 +221,17 @@ export default function AdminDashboard() {
       </div>
 
       {/* Daily Growth Trends */}
-      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={collapsibleCardStyle}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('trends')}>
           <h3 style={{ margin: 0 }}>📈 Activity Trends</h3>
-          <div style={{ background: '#eee', borderRadius: '8px', padding: '4px' }}>
+          <span>{collapsed.trends ? '➕' : '➖'}</span>
+        </div>
+        
+        {!collapsed.trends && (
+          <>
+            <div style={{ marginTop: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+              <div style={{ background: '#eee', borderRadius: '8px', padding: '4px' }}>
             <button 
               onClick={() => setTrendRange("seven")} 
               style={{ border: 'none', padding: '5px 15px', borderRadius: '6px', background: trendRange === "seven" ? '#fff' : 'transparent', cursor: 'pointer', fontWeight: trendRange === "seven" ? 'bold' : 'normal' }}>
@@ -236,6 +243,7 @@ export default function AdminDashboard() {
               30 Days
             </button>
           </div>
+            </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
           <TrendSection 
@@ -259,13 +267,21 @@ export default function AdminDashboard() {
             color="#ffc107" 
           />
         </div>
+        </>
+        )}
       </div>
 
       {/* Hourly "Time of Day" Trend */}
-      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: '2rem' }}>
-        <h3 style={{ marginTop: 0 }}>⏰ Peak Activity Hours (Last 24h)</h3>
-        <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '20px' }}>Identify when your users are most active during the day.</p>
-        <div style={{ height: '100px', display: 'flex', alignItems: 'flex-end', gap: '2px' }}>
+      <div style={collapsibleCardStyle}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('peakHours')}>
+          <h3 style={{ margin: 0 }}>⏰ Peak Activity Hours (Last 24h)</h3>
+          <span>{collapsed.peakHours ? '➕' : '➖'}</span>
+        </div>
+        
+        {!collapsed.peakHours && (
+          <div style={{ marginTop: '1rem' }}>
+            <p style={{ fontSize: '0.85rem', color: '#666', marginBottom: '20px' }}>Identify when your users are most active during the day.</p>
+            <div style={{ height: '100px', display: 'flex', alignItems: 'flex-end', gap: '2px' }}>
           {Array.from({ length: 24 }).map((_, hour) => {
             const hourData = stats.hourlyData?.find(d => d._id === hour);
             const count = hourData ? hourData.count : 0;
@@ -278,10 +294,34 @@ export default function AdminDashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#999', marginTop: '5px' }}>
           <span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>11 PM</span>
         </div>
+          </div>
+        )}
       </div>
 
-      {/* Visual Analytics Section */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+      {/* Traffic Engagement Section with Graph */}
+      <div style={collapsibleCardStyle}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('engagement')}>
+          <h3 style={{ margin: 0 }}>📊 Traffic Engagement & Conversion</h3>
+          <span>{collapsed.engagement ? '➕' : '➖'}</span>
+        </div>
+
+        {!collapsed.engagement && (
+          <>
+            <div style={{ marginTop: '1.5rem' }}>
+            <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f9fbfb', borderRadius: '12px' }}>
+              <h4 style={{ margin: '0 0 1rem 0' }}>Conversion Graph ({trendRange === 'seven' ? '7 Days' : '30 Days'})</h4>
+              <EngagementGraph 
+                landingData={stats.trends?.[trendRange]?.landing || []} 
+                storeData={stats.trends?.[trendRange]?.store || []} 
+              />
+              <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '10px', fontSize: '0.8rem' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><div style={{ width: 12, height: 12, background: '#075e54' }}></div> Landing Page</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><div style={{ width: 12, height: 12, background: '#25d366' }}></div> Store Views</span>
+              </div>
+            </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
         <div style={chartCardStyle}>
           <h3>Traffic Engagement</h3>
           <p style={{ fontSize: '0.8rem', color: '#666' }}>Landing vs Store Views</p>
@@ -316,12 +356,21 @@ export default function AdminDashboard() {
               <strong>{(stats.totalProducts / (stats.totalUsers || 1)).toFixed(1)}</strong>
             </div>
           </div>
-        </div>
+            </div>
+            </div>
+          </>
+        )}
       </div>
 
-      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-        <h3>Traders Management</h3>
-        <div style={{ overflowX: 'auto' }}>
+      {/* Traders Management Section */}
+      <div style={collapsibleCardStyle}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('traders')}>
+          <h3 style={{ margin: 0 }}>🏪 Traders Management</h3>
+          <span>{collapsed.traders ? '➕' : '➖'}</span>
+        </div>
+
+        {!collapsed.traders && (
+          <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem', minWidth: '600px' }}>
             <thead>
               <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
@@ -358,12 +407,19 @@ export default function AdminDashboard() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       {/* Products Management Section */}
-      <div style={{ background: '#fff', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginTop: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={collapsibleCardStyle}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('products')}>
           <h3 style={{ margin: 0 }}>📦 Products Management</h3>
+          <span>{collapsed.products ? '➕' : '➖'}</span>
+        </div>
+
+        {!collapsed.products && (
+          <div style={{ marginTop: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
           {/* Clean Search Toolbar */}
           <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
             <input 
@@ -383,52 +439,58 @@ export default function AdminDashboard() {
             />
           </div>
         </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          {productSearchTerm === "" && (stats.filteredProducts || []).length > 5 ? (
-            <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
-              Showing 5 most recent items. Use the search bar to find more.
-            </p>
-          ) : null}
-          
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-            <thead style={{ background: '#f8f9fa' }}>
-              <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
-                <th style={{ padding: '12px' }}>Product Details</th>
-                <th style={{ padding: '12px' }}>Price</th>
-                <th style={{ padding: '12px' }}>Trader</th>
-                <th style={{ padding: '12px' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(productSearchTerm === "" ? (stats.products || []).slice(0, 5) : (stats.filteredProducts || [])).map(p => (
-                <tr key={p._id} style={{ borderBottom: '1px solid #f1f1f1' }}>
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {p.imageUrl ? (
-                        <img src={p.imageUrl} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#aaa' }}>No Image</div>
-                      )}
-                      <span style={{ fontWeight: 500 }}>{p.name}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#075e54' }}>₦{p.price.toLocaleString()}</td>
-                  <td style={{ padding: '12px', fontSize: '0.85rem', color: '#666' }}>{p.traderPhone}</td>
-                  <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
-                    <button onClick={() => editProduct(p)} style={{ ...btnStyle('#1d9bf0'), padding: '5px 10px' }}>Edit</button>
-                    <button onClick={() => deleteProduct(p._id)} style={{ ...btnStyle('#ff4d4d'), padding: '5px 10px' }}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            <div style={{ overflowX: 'auto' }}>
+              {productSearchTerm === "" && (stats.filteredProducts || []).length > 5 ? (
+                <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
+                  Showing 5 most recent items. Use the search bar to find more.
+                </p>
+              ) : null}
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+                <thead style={{ background: '#f8f9fa' }}>
+                  <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
+                    <th style={{ padding: '12px' }}>Product Details</th>
+                    <th style={{ padding: '12px' }}>Price</th>
+                    <th style={{ padding: '12px' }}>Trader</th>
+                    <th style={{ padding: '12px' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(productSearchTerm === "" ? (stats.products || []).slice(0, 5) : (stats.filteredProducts || [])).map(p => (
+                    <tr key={p._id} style={{ borderBottom: '1px solid #f1f1f1' }}>
+                      <td style={{ padding: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {p.imageUrl ? (
+                            <img src={p.imageUrl} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#aaa' }}>No Image</div>
+                          )}
+                          <span style={{ fontWeight: 500 }}>{p.name}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px', fontWeight: 'bold', color: '#075e54' }}>₦{p.price.toLocaleString()}</td>
+                      <td style={{ padding: '12px', fontSize: '0.85rem', color: '#666' }}>{p.traderPhone}</td>
+                      <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
+                        <button onClick={() => editProduct(p)} style={{ ...btnStyle('#1d9bf0'), padding: '5px 10px' }}>Edit</button>
+                        <button onClick={() => deleteProduct(p._id)} style={{ ...btnStyle('#ff4d4d'), padding: '5px 10px' }}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 12, padding: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginTop: '2rem' }}>
-        <h3>Latest Customer Feedback</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+      {/* Feedback Section */}
+      <div style={collapsibleCardStyle}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('feedback')}>
+          <h3 style={{ margin: 0 }}>💬 Latest Customer Feedback</h3>
+          <span>{collapsed.feedback ? '➕' : '➖'}</span>
+        </div>
+
+        {!collapsed.feedback && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
           {stats.feedback?.length === 0 ? (
             <p>No feedback received yet.</p>
           ) : (
@@ -446,6 +508,7 @@ export default function AdminDashboard() {
             ))
           )}
         </div>
+        )}
       </div>
     </div>
   );
