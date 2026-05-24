@@ -314,15 +314,50 @@ app.post("/api/payments/webhook", async(req, res) => {
 
     // Verify the request came from Paystack
     if (hash !== req.headers["x-paystack-signature"]) {
+        console.error(
+            "❌ Paystack Webhook Error: Signature mismatch. Check your PAYSTACK_SECRET_KEY.",
+        );
         return res.status(400).send("Invalid signature");
     }
 
     const event = req.body;
+    console.log(`📩 Paystack Webhook Received: ${event.event}`);
+
     if (event.event === "charge.success") {
-        const { phone } = event.data.metadata;
+        let metadata = event.data.metadata;
+        
+        // Defensive: Paystack sometimes sends metadata as a string
+        if (typeof metadata === "string" && metadata.trim() !== "") {
+            try {
+                metadata = JSON.parse(metadata);
+            } catch (e) {
+                console.error("❌ Failed to parse Paystack metadata string:", e.message);
+            }
+        }
+
+        const phone = metadata?.phone;
+
+        if (!phone) {
+            console.error("❌ Paystack Webhook Error: No phone number found in metadata.");
+            return res.sendStatus(200);
+        }
+
+        console.log(`🔎 Attempting to verify user with phone: ${phone}`);
 
         try {
-            const user = await User.findOneAndUpdate({ phone: phone }, { isVerified: true }, { new: true }, );
+            const user = await User.findOneAndUpdate({
+                $or: [
+                    { phone: phone },
+                    { phone: `+${phone}` }, // Match if DB has the plus
+                    { phone: phone.startsWith("234") ? `0${phone.substring(3)}` : phone }, // Match local 080...
+                ],
+            }, { isVerified: true }, { new: true }, );
+
+            if (!user) {
+                console.error(`❌ User not found in database for phone: ${phone}`);
+                return res.sendStatus(200); // Still return 200 to Paystack
+            }
+
             console.log(`✅ User ${phone} verified via Paystack payment.`);
 
             // Send a confirmation message via WhatsApp to the trader
