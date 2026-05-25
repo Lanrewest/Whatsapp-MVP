@@ -130,12 +130,12 @@ app.get("/api/products/:key", async (req, res) => {
 // Get all products for the general store
 app.get("/api/products", async (req, res) => {
   try {
-    // Fetch all products, sorted by newest first
-    const products = await Product.find({}).sort({ createdAt: -1 }).lean();
+    // Fetch all products
+    const allProds = await Product.find({}).sort({ createdAt: -1 }).lean();
     // Fetch all traders to get names and addresses for the labels
     const traders = await User.find({}, "phone isVerified companyName address");
 
-    const augmentedProducts = products
+    const augmentedProducts = allProds
       .map((p) => {
         const cleanTraderPhone = (p.traderPhone || "").replace(/\D/g, "");
         const trader = traders.find((t) => {
@@ -145,9 +145,12 @@ app.get("/api/products", async (req, res) => {
 
         return {
           ...p,
-          isVerified: trader ? trader.isVerified : false,
-          traderName: trader ? trader.companyName : "Unknown Trader",
-          traderAddress: trader ? trader.address : "",
+          isVerified: trader && trader.isVerified ? true : false,
+          traderName:
+            trader && trader.companyName
+              ? trader.companyName
+              : "Unknown Trader",
+          traderAddress: trader && trader.address ? trader.address : "",
         };
       })
       .sort((a, b) => b.isVerified - a.isVerified); // Priority: Verified (true) > Unverified (false)
@@ -356,7 +359,7 @@ app.post("/api/payments/webhook", async (req, res) => {
     }
 
     // Try to get phone from metadata, fallback to email prefix if metadata fails
-    let phone = metadata && metadata.phone;
+    let phone = metadata && metadata.phone ? metadata.phone : null;
 
     if (!phone && event.data.customer && event.data.customer.email) {
       // If email is +2348071821807@arewaconnect.com.ng, extract the part before @

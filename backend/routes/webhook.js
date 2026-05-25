@@ -188,7 +188,7 @@ router.post("/", async (req, res) => {
     // 2. State Machine
     switch (user.state) {
       case "awaiting_language":
-        console.log(`🔄 Processing state: awaiting_language for ${user.phone}`);
+        console.log(`🔄 User ${user.phone} selecting language: ${msg}`);
         if (msg === "1") {
           user.language = "en";
         } else if (msg === "2") {
@@ -201,10 +201,12 @@ router.post("/", async (req, res) => {
         await user.save();
         twiml.message(
           user.companyName
-            ? prompts[user.language].mainMenu
+            ? prompts[user.language].welcomeBack(user.companyName) +
+                "\n" +
+                prompts[user.language].mainMenu
             : prompts[user.language].askCompany,
         );
-        console.log(`✅ Response sent: ${user.state} prompt to ${user.phone}`);
+        console.log(`✅ State changed to: ${user.state}`);
         return res.type("text/xml").send(twiml.toString());
 
       case "register_company":
