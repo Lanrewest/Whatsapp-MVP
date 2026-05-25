@@ -137,18 +137,17 @@ app.get("/api/products", async (req, res) => {
 
     const augmentedProducts = products
       .map((p) => {
-        const cleanTraderPhone = p.traderPhone
-          ? p.traderPhone.replace(/\D/g, "")
-          : "";
-        const trader = traders.find(
-          (t) => t.phone.replace(/\D/g, "") === cleanTraderPhone,
-        );
+        const cleanTraderPhone = (p.traderPhone || "").replace(/\D/g, "");
+        const trader = traders.find((t) => {
+          const tPhone = (t.phone || "").replace(/\D/g, "");
+          return tPhone === cleanTraderPhone;
+        });
 
         return {
           ...p,
-          isVerified: (trader && trader.isVerified) || false,
-          traderName: (trader && trader.companyName) || "Unknown Trader",
-          traderAddress: (trader && trader.address) || "",
+          isVerified: trader ? trader.isVerified : false,
+          traderName: trader ? trader.companyName : "Unknown Trader",
+          traderAddress: trader ? trader.address : "",
         };
       })
       .sort((a, b) => b.isVerified - a.isVerified); // Priority: Verified (true) > Unverified (false)

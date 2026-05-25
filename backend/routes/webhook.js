@@ -149,6 +149,7 @@ router.post("/", async (req, res) => {
       console.log(`New user detected: ${from}`);
       user = await User.create({
         phone: phoneDigits, // Store clean digits for consistency
+        companyName: "",
         state: "awaiting_language",
         language: "en",
       });
@@ -174,18 +175,20 @@ router.post("/", async (req, res) => {
         user.state = "main_menu";
         await user.save();
         twiml.message(`${t.welcomeBack(user.companyName)}\n${t.mainMenu}`);
+        console.log(`✅ Response sent: Welcome back to ${user.phone}`);
         return res.type("text/xml").send(twiml.toString());
       }
       user.state = "awaiting_language";
       await user.save();
-      twiml.message(prompts[user.language || "en"].welcome);
+      twiml.message(prompts[lang].welcome);
+      console.log(`✅ Response sent: Language selection to ${user.phone}`);
       return res.type("text/xml").send(twiml.toString());
     }
 
     // 2. State Machine
     switch (user.state) {
       case "awaiting_language":
-        console.log("State: awaiting_language");
+        console.log(`🔄 Processing state: awaiting_language for ${user.phone}`);
         if (msg === "1") {
           user.language = "en";
         } else if (msg === "2") {
@@ -201,6 +204,7 @@ router.post("/", async (req, res) => {
             ? prompts[user.language].mainMenu
             : prompts[user.language].askCompany,
         );
+        console.log(`✅ Response sent: ${user.state} prompt to ${user.phone}`);
         return res.type("text/xml").send(twiml.toString());
 
       case "register_company":
