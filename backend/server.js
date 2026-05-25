@@ -115,7 +115,15 @@ app.get("/api/products/:key", async (req, res) => {
     user = await User.findOne({ slug: req.params.key });
   }
   if (!user) return res.json([]);
-  const products = await Product.find({ traderPhone: user.phone });
+
+  // Normalize phone for lookup to ensure compatibility with older product entries
+  const phoneDigits = user.phone.replace(/\D/g, "");
+  const products = await Product.find({
+    $or: [
+      { traderPhone: user.phone },
+      { traderPhone: { $regex: phoneDigits } },
+    ],
+  });
   res.json(products);
 });
 
@@ -126,13 +134,21 @@ app.get("/api/products", async (req, res) => {
     const products = await Product.find({}).sort({ createdAt: -1 }).lean();
     const traders = await User.find({ isVerified: true }, "phone isVerified");
 
-    // Map through products and attach verification status if the trader is verified
-    const verifiedPhones = new Set(traders.map((t) => t.phone));
+    // Normalize verified trader phones to digits only for consistent matching
+    const verifiedPhones = new Set(
+      traders.map((t) => t.phone.replace(/\D/g, "")),
+    );
+
     const augmentedProducts = products
-      .map((p) => ({
-        ...p,
-        isVerified: verifiedPhones.has(p.traderPhone),
-      }))
+      .map((p) => {
+        const cleanTraderPhone = p.traderPhone
+          ? p.traderPhone.replace(/\D/g, "")
+          : "";
+        return {
+          ...p,
+          isVerified: verifiedPhones.has(cleanTraderPhone),
+        };
+      })
       .sort((a, b) => b.isVerified - a.isVerified); // Priority: Verified (true) > Unverified (false)
 
     res.json(augmentedProducts);
@@ -369,11 +385,14 @@ app.post("/api/payments/webhook", async (req, res) => {
           $or: [
             { phone: phone },
             { phone: `+${phone}` }, // Match if DB has the plus
+            { phone: `whatsapp:+${phone}` },
             {
               phone: phone.startsWith("234") ? `0${phone.substring(3)}` : phone,
             }, // Match local 080...
-            { phone: phone.startsWith("234") ? phone.substring(3) : phone }, // Match 807...
-            { phone: `whatsapp:+${phone}` }, // Match Twilio format if stored raw
+            { phone: phone.startsWith("234") ? phone.substring(3) : phone },
+            {
+              phone: phone.startsWith("0") ? `234${phone.substring(1)}` : phone,
+            },
           ],
         },
         { isVerified: true },
