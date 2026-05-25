@@ -425,7 +425,7 @@ router.post("/", async (req, res) => {
 
         await Product.create({
           traderSlug: user.slug, // Save the trader's slug with the product
-          traderPhone: from,
+          traderPhone: phoneDigits, // Use normalized digits
           name: user.currentProduct.name,
           price: user.currentProduct.price,
           imageUrl,

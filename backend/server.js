@@ -381,7 +381,9 @@ app.post("/api/payments/webhook", async (req, res) => {
       );
 
       if (!user) {
-        console.error(`❌ User not found in database for phone: ${phone}`);
+        console.error(
+          `❌ User matching "${phone}" not found in DB. Check your User collection phone formats.`,
+        );
         return res.sendStatus(200); // Still return 200 to Paystack
       }
 
