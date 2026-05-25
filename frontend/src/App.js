@@ -9,7 +9,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 export default function App() {
   useEffect(() => {
     // Set Default Tab Title
-    document.title = "ArewaMarket | Northern Digital Storefronts";
+    document.title = "ArewaConnect | Northern Digital Storefronts";
   }, []);
 
   return (
