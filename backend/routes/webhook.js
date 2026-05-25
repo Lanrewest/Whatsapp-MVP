@@ -117,6 +117,13 @@ router.post("/", async (req, res) => {
     const numMedia = parseInt(req.body.NumMedia || "0", 10);
     const mediaUrl = numMedia > 0 ? req.body.MediaUrl0 : null;
 
+    if (!from || from === "") {
+      console.error(
+        "❌ Webhook Error: No 'From' number provided in request body.",
+      );
+      return res.status(400).send("Missing sender info");
+    }
+
     console.log(`📩 Incoming: From=${from}, Msg="${msg}"`);
     const phoneDigits = from.replace(/\D/g, "");
 
@@ -155,6 +162,11 @@ router.post("/", async (req, res) => {
       });
     }
 
+    if (!user) {
+      console.error("❌ Failed to find or create user for:", phoneDigits);
+      return res.status(500).send("Database error");
+    }
+
     // Initialize defaults
     user.language =
       user.language === "en" || user.language === "ha" ? user.language : "en";
@@ -170,7 +182,7 @@ router.post("/", async (req, res) => {
 
     if (isGreeting || isJoinMessage) {
       console.log(
-        `👋 Greeting detected. Resetting state for user: ${user.phone}`,
+        `👋 Greeting from ${user.phone}. Setting state to awaiting_language.`,
       );
       if (user.companyName && !isJoinMessage) {
         user.state = "main_menu";
@@ -207,7 +219,8 @@ router.post("/", async (req, res) => {
                 prompts[user.language].mainMenu
             : prompts[user.language].askCompany,
         );
-        console.log(`✅ State changed to: ${user.state}`);
+        console.log(`✅ User ${user.phone} state changed to: ${user.state}`);
+        res.header("Content-Type", "text/xml");
         return res.type("text/xml").send(twiml.toString());
 
       case "register_company":
@@ -497,12 +510,23 @@ router.post("/", async (req, res) => {
     }
 
     // Default fallback
+    console.log(`ℹ️ No state matched for ${user.phone}, sending fallback.`);
     twiml.message(t.replyHi);
-    return res.type("text/xml").send(twiml.toString());
+    res.header("Content-Type", "text/xml");
+    return res.send(twiml.toString());
   } catch (error) {
-    console.error("Webhook Error:", error);
-    twiml.message("Sorry, an error occurred. Please try again later.");
-    return res.type("text/xml").send(twiml.toString());
+    if (error.code === 63038) {
+      console.error(
+        "🛑 TWILIO LIMIT REACHED: Your daily message quota has been exceeded. Responses will not be delivered.",
+      );
+    } else {
+      console.error("❌ Webhook Execution Error:", error);
+    }
+
+    const errorTwiml = new MessagingResponse();
+    errorTwiml.message("Sorry, an error occurred. Please try again later.");
+    res.header("Content-Type", "text/xml");
+    return res.send(errorTwiml.toString());
   }
 });
 
