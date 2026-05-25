@@ -156,11 +156,12 @@ router.post("/", async (req, res) => {
     }
 
     // Initialize defaults
-    user.language = user.language || "en";
+    user.language =
+      user.language === "en" || user.language === "ha" ? user.language : "en";
     user.currentProduct = user.currentProduct || { name: "", price: 0 };
     user.state = user.state || "awaiting_language";
 
-    const lang = user.language || "en";
+    const lang = user.language;
     const t = prompts[lang];
 
     // 1. Unified Greeting & Reset Logic

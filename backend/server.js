@@ -60,12 +60,17 @@ const twilioClient = twilio(
 const app = express();
 app.use(
   cors({
-    origin: [
-      process.env.FRONTEND_URL || "https://arewaconnect.com.ng",
-      process.env.FRONTEND_URL,
-      "http://localhost:3000",
-      "https://localhost:3000",
-    ].filter(Boolean),
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl) or matching our whitelist
+      const allowedOrigins = [
+        process.env.FRONTEND_URL,
+        "http://localhost:3000",
+        "https://arewaconnect.com.ng",
+      ].filter(Boolean);
+      if (!origin || allowedOrigins.some((o) => origin.startsWith(o)))
+        return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
   }),
 );
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -114,7 +119,10 @@ app.get("/api/products/:key", async (req, res) => {
   if (!user) {
     user = await User.findOne({ slug: req.params.key });
   }
-  if (!user) return res.json([]);
+  if (!user) {
+    console.log(`ℹ️ Product lookup failed for key: ${req.params.key}`);
+    return res.json([]);
+  }
 
   // Normalize phone for lookup to ensure compatibility with older product entries
   const phoneDigits = user.phone.replace(/\D/g, "");
@@ -520,7 +528,6 @@ app.post("/api/analytics/track", async (req, res) => {
 const HTTP_PORT = process.env.PORT || 5000;
 
 app.listen(HTTP_PORT, () => {
-  console.log(
-    `Server running in ${process.env.NODE_ENV || "development"} mode on port ${HTTP_PORT}`,
-  );
+  console.log(`🚀 Server live in ${process.env.NODE_ENV || "production"} mode`);
+  console.log(`📡 Listening on port ${HTTP_PORT}`);
 });
