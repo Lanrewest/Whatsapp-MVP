@@ -117,10 +117,10 @@ router.post("/", async (req, res) => {
     const numMedia = parseInt(req.body.NumMedia || "0", 10);
     const mediaUrl = numMedia > 0 ? req.body.MediaUrl0 : null;
 
-    console.log(`Received message from ${from}: ${msg}`);
+    console.log(`📩 Incoming: From=${from}, Msg="${msg}"`);
     const phoneDigits = from.replace(/\D/g, "");
 
-    // 🔎 Robust User Lookup: Matches various phone formats (+234, 234, 080, etc.)
+    // 🔎 Robust User Lookup
     let user = await User.findOne({
       $or: [
         { phone: from },
@@ -136,6 +136,11 @@ router.post("/", async (req, res) => {
             ? phoneDigits.substring(3)
             : phoneDigits,
         },
+        {
+          phone: phoneDigits.startsWith("0")
+            ? `234${phoneDigits.substring(1)}`
+            : phoneDigits,
+        },
         { phone: `whatsapp:+${phoneDigits}` },
       ],
     });
@@ -143,7 +148,7 @@ router.post("/", async (req, res) => {
     if (!user) {
       console.log(`New user detected: ${from}`);
       user = await User.create({
-        phone: from,
+        phone: phoneDigits, // Store clean digits for consistency
         state: "awaiting_language",
         language: "en",
       });
@@ -162,6 +167,9 @@ router.post("/", async (req, res) => {
     const isJoinMessage = /^join/i.test(msg);
 
     if (isGreeting || isJoinMessage) {
+      console.log(
+        `👋 Greeting detected. Resetting state for user: ${user.phone}`,
+      );
       if (user.companyName && !isJoinMessage) {
         user.state = "main_menu";
         await user.save();
@@ -170,13 +178,14 @@ router.post("/", async (req, res) => {
       }
       user.state = "awaiting_language";
       await user.save();
-      twiml.message(prompts.en.welcome);
+      twiml.message(prompts[user.language || "en"].welcome);
       return res.type("text/xml").send(twiml.toString());
     }
 
     // 2. State Machine
     switch (user.state) {
       case "awaiting_language":
+        console.log("State: awaiting_language");
         if (msg === "1") {
           user.language = "en";
         } else if (msg === "2") {
