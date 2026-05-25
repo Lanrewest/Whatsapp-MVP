@@ -211,26 +211,45 @@ router.post("/", async (req, res) => {
           twiml.message(t.welcomeBack(user.companyName) + "\n" + t.mainMenu);
           return res.type("text/xml").send(twiml.toString());
         }
-        const safeName = msg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+        // Split input by comma to handle Name and Address at once
+        const regParts = msg.split(",").map((p) => p.trim());
+        const compName = regParts[0];
+        const compAddr =
+          regParts.length > 1 ? regParts.slice(1).join(", ") : null;
+
+        const safeName = compName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const existing = await User.findOne({
           companyName: { $regex: new RegExp(`^${safeName}$`, "i") },
         });
+
         if (existing) {
           // Uniqueness Guard
           twiml.message(t.companyNameTaken);
           return res.type("text/xml").send(twiml.toString());
         }
-        user.companyName = msg;
-        let baseSlug = slugify(msg);
+
+        user.companyName = compName;
+        let baseSlug = slugify(compName);
         let slug = baseSlug;
         let i = 1;
         while (await User.findOne({ slug })) {
           slug = `${baseSlug}-${i++}`;
         }
         user.slug = slug;
-        user.state = "register_address";
-        await user.save();
-        twiml.message(t.askAddress);
+
+        if (compAddr) {
+          // If address was provided with the comma, finish registration immediately
+          user.address = compAddr;
+          user.state = "main_menu";
+          await user.save();
+          twiml.message(t.registrationComplete + "\n" + t.mainMenu);
+        } else {
+          // Fallback if they only sent the name
+          user.state = "register_address";
+          await user.save();
+          twiml.message(t.askAddress);
+        }
         return res.type("text/xml").send(twiml.toString());
 
       case "register_address":

@@ -132,21 +132,23 @@ app.get("/api/products", async (req, res) => {
   try {
     // Fetch all products, sorted by newest first
     const products = await Product.find({}).sort({ createdAt: -1 }).lean();
-    const traders = await User.find({ isVerified: true }, "phone isVerified");
-
-    // Normalize verified trader phones to digits only for consistent matching
-    const verifiedPhones = new Set(
-      traders.map((t) => t.phone.replace(/\D/g, "")),
-    );
+    // Fetch all traders to get names and addresses for the labels
+    const traders = await User.find({}, "phone isVerified companyName address");
 
     const augmentedProducts = products
       .map((p) => {
         const cleanTraderPhone = p.traderPhone
           ? p.traderPhone.replace(/\D/g, "")
           : "";
+        const trader = traders.find(
+          (t) => t.phone.replace(/\D/g, "") === cleanTraderPhone,
+        );
+
         return {
           ...p,
-          isVerified: verifiedPhones.has(cleanTraderPhone),
+          isVerified: (trader && trader.isVerified) || false,
+          traderName: (trader && trader.companyName) || "Unknown Trader",
+          traderAddress: (trader && trader.address) || "",
         };
       })
       .sort((a, b) => b.isVerified - a.isVerified); // Priority: Verified (true) > Unverified (false)

@@ -97,6 +97,14 @@ export default function GeneralStore() {
                     {p.isVerified && <span title="Verified Trader" style={{ color: '#1d9bf0', fontSize: '0.9rem' }}>✅</span>}
                   </div>
                   <p style={{ margin: 0, color: "#222", fontWeight: 'bold' }}>₦{p.price.toLocaleString()}</p>
+                  
+                  <div style={{ marginTop: '8px', fontSize: '0.85rem', color: '#666' }}>
+                    <p style={{ margin: '2px 0' }}>Sold By: <strong>{p.traderName}</strong></p>
+                    {p.traderAddress && (
+                      <p style={{ margin: '2px 0' }}>Location: {p.traderAddress}</p>
+                    )}
+                  </div>
+
                   {p.traderSlug && ( // Use traderSlug for the link
                     <Link to={`/store/${p.traderSlug}`} style={linkStyle}>
                       View Trader's Store
