@@ -133,6 +133,7 @@ router.post("/", async (req, res) => {
         { phone: from },
         { phone: phoneDigits },
         { phone: `+${phoneDigits}` },
+        { phone: `whatsapp:+${phoneDigits}` },
         {
           phone: phoneDigits.startsWith("234")
             ? `0${phoneDigits.substring(3)}`
@@ -148,7 +149,6 @@ router.post("/", async (req, res) => {
             ? `234${phoneDigits.substring(1)}`
             : phoneDigits,
         },
-        { phone: `whatsapp:+${phoneDigits}` },
       ],
     });
 
@@ -219,8 +219,7 @@ router.post("/", async (req, res) => {
                 prompts[user.language].mainMenu
             : prompts[user.language].askCompany,
         );
-        console.log(`✅ User ${user.phone} state changed to: ${user.state}`);
-        res.header("Content-Type", "text/xml");
+        console.log(`✅ Response generated for ${user.phone}: ${user.state}`);
         return res.type("text/xml").send(twiml.toString());
 
       case "register_company":
@@ -349,6 +348,10 @@ router.post("/", async (req, res) => {
               `${t.verifying}\n\nPay here to get your badge: ${response.data.data.authorization_url}`,
             );
           } catch (err) {
+            console.error(
+              "❌ Paystack Initialization Error:",
+              err.response ? err.response.data : err.message,
+            );
             twiml.message(t.verifyError);
           }
           return res.type("text/xml").send(twiml.toString());
@@ -512,8 +515,7 @@ router.post("/", async (req, res) => {
     // Default fallback
     console.log(`ℹ️ No state matched for ${user.phone}, sending fallback.`);
     twiml.message(t.replyHi);
-    res.header("Content-Type", "text/xml");
-    return res.send(twiml.toString());
+    return res.type("text/xml").send(twiml.toString());
   } catch (error) {
     if (error.code === 63038) {
       console.error(
@@ -525,8 +527,7 @@ router.post("/", async (req, res) => {
 
     const errorTwiml = new MessagingResponse();
     errorTwiml.message("Sorry, an error occurred. Please try again later.");
-    res.header("Content-Type", "text/xml");
-    return res.send(errorTwiml.toString());
+    return res.type("text/xml").send(errorTwiml.toString());
   }
 });
 
