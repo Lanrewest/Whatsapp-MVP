@@ -328,17 +328,28 @@ router.post("/", async (req, res) => {
             return res.type("text/xml").send(twiml.toString());
           }
           try {
+            const rawKey = process.env.PAYSTACK_SECRET_KEY || "";
+            const cleanKey = rawKey.trim();
+
+            console.log(
+              `🔑 Paystack Auth Debug: Prefix=${cleanKey.substring(0, 7)}..., Length=${cleanKey.length}, Type=${cleanKey.startsWith("sk_") ? "Secret (Correct)" : "INVALID_TYPE"}`,
+            );
+
+            const frontendUrl = (
+              process.env.FRONTEND_URL || "https://arewaconnect.com.ng"
+            ).replace(/\/$/, "");
+
             const response = await axios.post(
               "https://api.paystack.co/transaction/initialize",
               {
-                email: `${from.replace(/\D/g, "")}@arewaconnect.com.ng`, // "23480..."
+                email: `${phoneDigits}@arewaconnect.com.ng`,
                 amount: 2000 * 100,
-                callback_url: `${process.env.FRONTEND_URL}/store/${user.slug}`,
-                metadata: { phone: from.replace(/\D/g, "") }, // Send digits only
+                callback_url: `${frontendUrl}/store/${user.slug}`,
+                metadata: { phone: phoneDigits },
               },
               {
                 headers: {
-                  Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                  Authorization: `Bearer ${cleanKey}`,
                 },
               },
             );
