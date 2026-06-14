@@ -5,6 +5,9 @@ import GeneralStore from "./pages/GeneralStore"; // .jsx is implied
 import LandingPage from "./pages/LandingPage.jsx"; // .jsx is explicit for clarity
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import ContactUs from "./pages/ContactUs";
 
 export default function App() {
   useEffect(() => {
@@ -19,6 +22,9 @@ export default function App() {
         <Route path="/store" element={<GeneralStore />} />{" "}
         <Route path="/store/:slug" element={<Store />} />{" "}
         <Route path="/" element={<LandingPage />} />{" "}
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />{" "}
+        <Route path="/terms-of-service" element={<TermsOfService />} />{" "}
+        <Route path="/contact-us" element={<ContactUs />} />{" "}
         <Route path="*" element={<NotFound />} />{" "}
       </Routes>{" "}
     </BrowserRouter>

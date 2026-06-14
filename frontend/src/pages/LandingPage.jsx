@@ -224,6 +224,11 @@ export default function LandingPage() {
       <footer style={styles.footer}>
         <div style={{ fontWeight: "bold", color: "#075e54", marginBottom: 10 }}>Arewa Connect</div>
         <p style={{ fontSize: "0.85rem" }}>© {new Date().getFullYear()}. All rights reserved.</p>
+        <div style={{ marginTop: 15, display: "flex", justifyContent: "center", gap: "20px", fontSize: "0.85rem" }}>
+          <Link to="/privacy-policy" style={{ color: "#666", textDecoration: "none" }}>Privacy Policy</Link>
+          <Link to="/terms-of-service" style={{ color: "#666", textDecoration: "none" }}>Terms of Service</Link>
+          <Link to="/contact-us" style={{ color: "#666", textDecoration: "none" }}>Contact Us</Link>
+        </div>
         <div style={{ marginTop: 20, fontSize: "0.8rem", color: "#bbb" }}>
           Example Store: <code>/store/08012345678</code>
         </div>
