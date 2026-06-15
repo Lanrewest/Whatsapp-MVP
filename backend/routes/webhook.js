@@ -47,7 +47,7 @@ const prompts = {
     replyHi: "Reply Hi to start",
     welcomeBack: (name) => `Welcome back, ${name}! What would you like to do?`,
     mainMenu:
-      "1. Add Product\n2. View My Store\n3. Update Address\n4. Delete Product\n5. Give Feedback\n6. Get Verified Badge (₦2,000)",
+      "1. Add Product\n2. View My Store\n3. Update Address\n4. Delete Product\n5. Give Feedback\n6. Upgrade Account / Get Badge",
     productNotFound: "Product not found.",
     askNewAddress: "Please enter your new company address:",
     addressUpdated: "✅ Address updated successfully!",
@@ -60,6 +60,8 @@ const prompts = {
     verifying: "Generating your secure payment link...",
     verifyError: "Payment system busy. Please try again or contact support.",
     askVerifyChoice:
+      "Select Upgrade Type:\n1. Verified Badge (₦2,000 One-time)\n2. Pro Subscription (₦2,000 Monthly - 200 messages/day)",
+    askPaymentMethod:
       "How would you like to pay for your badge?\n1. Pay Online (Instant ✅)\n2. Bank Transfer (Manual 🏦)",
     bankDetails:
       "Please transfer ₦2,000 to:\n\n*Bank:* Zenith Bank\n*Account:* 1234567890\n*Name:* Arewa Connect\n\nAfter payment, please send a *screenshot of the receipt* here.",
@@ -88,7 +90,7 @@ const prompts = {
     replyHi: "Amsa da Hi don farawa",
     welcomeBack: (name) => `Barka da dawowa, ${name}! Me kake son yi?`,
     mainMenu:
-      "1. Ƙara Kaya\n2. Duba Shagona\n3. Gyara Adireshin Kamfani\n4. Goge Kaya\n5. Ba da Rahoto/Shawara\n6. Samu Shaidar ✅ (₦2,000)",
+      "1. Ƙara Kaya\n2. Duba Shagona\n3. Gyara Adireshin Kamfani\n4. Goge Kaya\n5. Ba da Rahoto/Shawara\n6. Haɓaka Asusun ku",
     productNotFound: "Ba a sami kaya ba.",
     askNewAddress: "Da fatan za a shigar da sabon adireshin kamfani:",
     addressUpdated: "✅ An gyara adireshin kamfani cikin nasara!",
@@ -100,6 +102,8 @@ const prompts = {
     verifying: "Ana shirya hanyar biyan kuɗi...",
     verifyError: "An sami matsala. Da fatan za a sake gwadawa.",
     askVerifyChoice:
+      "Zaɓi nau'in haɓakawa:\n1. Shaidar Tabbatarwa (₦2,000 Sau ɗaya)\n2. Pro Subscription (₦2,000 Duk wata - Sakonni 200 kowace rana)",
+    askPaymentMethod:
       "Yaya kake son biya?\n1. Biya ta Online (Nan take ✅)\n2. Canja wurin kudi ta Banki (Manual 🏦)",
     bankDetails:
       "Da fatan za a tura ₦2,000 zuwa:\n\n*Bank:* Zenith Bank\n*Account:* 1234567890\n*Sunan:* Arewa Connect\n\nBayan kayi biya, turo hoton shaidar biyan ka (receipt) a nan.",
@@ -336,16 +340,31 @@ router.post("/", async (req, res) => {
           twiml.message(t.askFeedback);
           return res.type("text/xml").send(twiml.toString());
         } else if (msg === "6") {
-          if (user.isVerified) {
-            twiml.message("You are already verified! ✅");
-            return res.type("text/xml").send(twiml.toString());
-          }
           user.state = "verification_choice";
           await user.save();
           twiml.message(t.askVerifyChoice);
           return res.type("text/xml").send(twiml.toString());
         }
         break;
+
+      case "verification_choice":
+        if (msg === "1" || msg === "2") {
+          // Store the choice (Verified or Pro) in a temporary field or state
+          user.pendingTier = msg === "1" ? "verified" : "pro";
+          user.state = "payment_method_choice";
+          await user.save();
+          twiml.message(t.askPaymentMethod);
+          return res.type("text/xml").send(twiml.toString());
+        } else {
+          twiml.message(t.askVerifyChoice);
+          return res.type("text/xml").send(twiml.toString());
+        }
+
+      case "payment_method_choice":
+        // Logic moved from old verification_choice to here to support the new two-step flow
+        if (msg === "1") {
+          // Paystack logic
+          if (!process.env.PAYSTACK_SECRET_KEY) {
 
       case "verification_choice":
         if (msg === "1") {

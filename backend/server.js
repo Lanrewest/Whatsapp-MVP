@@ -200,10 +200,12 @@ app.post("/api/request", async (req, res) => {
     trader.lastUsageDate = today;
   }
 
-  const dailyLimit = trader.isVerified ? 50 : 10;
+  if (trader.isPro) dailyLimit = 200;
+  else if (trader.isVerified) dailyLimit = 50;
+
   if (trader.dailyUsageCount >= dailyLimit) {
     console.warn(`⚠️ Trader ${traderPhone} has reached their daily limit.`);
-    // We still return success to the frontend so the customer can proceed 
+    // We still return success to the frontend so the customer can proceed
     // to the manual WhatsApp link, but we DON'T send the Twilio message.
     return res.json({ success: true, note: "limit_reached" });
   }
@@ -223,11 +225,9 @@ app.post("/api/request", async (req, res) => {
   } catch (err) {
     if (err.code === 63038) {
       console.error("🛑 Twilio Error 63038: Daily message limit exceeded.");
-      return res
-        .status(429)
-        .json({
-          error: "Twilio daily limit exceeded. Please try again tomorrow.",
-        });
+      return res.status(429).json({
+        error: "Twilio daily limit exceeded. Please try again tomorrow.",
+      });
     }
     res.status(500).json({ error: "Failed to send WhatsApp message" });
   }
