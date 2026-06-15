@@ -193,6 +193,21 @@ app.post("/api/request", async (req, res) => {
     return res.status(404).json({ error: "Trader not found" });
   }
 
+  // 🛡️ Check Trader's Daily Limit
+  const today = new Date().toISOString().split("T")[0];
+  if (trader.lastUsageDate !== today) {
+    trader.dailyUsageCount = 0;
+    trader.lastUsageDate = today;
+  }
+
+  const dailyLimit = trader.isVerified ? 50 : 10;
+  if (trader.dailyUsageCount >= dailyLimit) {
+    console.warn(`⚠️ Trader ${traderPhone} has reached their daily limit.`);
+    // We still return success to the frontend so the customer can proceed 
+    // to the manual WhatsApp link, but we DON'T send the Twilio message.
+    return res.json({ success: true, note: "limit_reached" });
+  }
+
   try {
     // Use the pre-initialized client
     await twilioClient.messages.create({
@@ -200,6 +215,10 @@ app.post("/api/request", async (req, res) => {
       to: `whatsapp:${traderPhone}`,
       body: `New customer request from ${customerName}:\n${customerRequest}`,
     });
+
+    trader.dailyUsageCount++;
+    await trader.save();
+
     res.json({ success: true });
   } catch (err) {
     if (err.code === 63038) {

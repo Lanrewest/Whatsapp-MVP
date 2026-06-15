@@ -173,6 +173,31 @@ router.post("/", async (req, res) => {
     user.currentProduct = user.currentProduct || { name: "", price: 0 };
     user.state = user.state || "awaiting_language";
 
+    // 🛡️ Daily Usage Cap Logic
+    const today = new Date().toISOString().split("T")[0];
+    if (user.lastUsageDate !== today) {
+      user.dailyUsageCount = 0;
+      user.lastUsageDate = today;
+    }
+
+    // Define limits based on verification status
+    const dailyLimit = user.isVerified ? 50 : 10;
+
+    if (user.dailyUsageCount >= dailyLimit) {
+      // Only notify them once that they hit the limit
+      if (user.dailyUsageCount === dailyLimit) {
+        user.dailyUsageCount++;
+        await user.save();
+        const limitMsg =
+          user.language === "ha"
+            ? "Kuyi hakuri, kun kai iyakacin sakonni na yau. Garzaya ku sami Verified Badge don karin dama."
+            : "You've reached your daily limit. Get a Verified Badge to increase your limit!";
+        twiml.message(limitMsg);
+        return res.type("text/xml").send(twiml.toString());
+      }
+      return res.sendStatus(200); // Silent ignore to save Twilio costs
+    }
+
     const lang = user.language;
     const t = prompts[lang];
 
@@ -184,6 +209,7 @@ router.post("/", async (req, res) => {
       console.log(
         `👋 Greeting from ${user.phone}. Setting state to awaiting_language.`,
       );
+      user.dailyUsageCount++; // Count the interaction
       if (user.companyName && !isJoinMessage) {
         user.state = "main_menu";
         await user.save();
@@ -197,6 +223,9 @@ router.post("/", async (req, res) => {
       console.log(`✅ Response sent: Language selection to ${user.phone}`);
       return res.type("text/xml").send(twiml.toString());
     }
+
+    // Increment usage for other interactions
+    user.dailyUsageCount++;
 
     // 2. State Machine
     switch (user.state) {
