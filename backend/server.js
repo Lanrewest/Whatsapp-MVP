@@ -142,7 +142,7 @@ app.get("/api/products", async (req, res) => {
     // Fetch all products
     const allProds = await Product.find({}).sort({ createdAt: -1 }).lean();
     // Fetch all traders to get names and addresses for the labels
-    const traders = await User.find({}, "phone isVerified companyName address");
+    const traders = await User.find({}, "phone isVerified isPro companyName address");
 
     const augmentedProducts = allProds
       .map((p) => {
@@ -163,7 +163,12 @@ app.get("/api/products", async (req, res) => {
           traderAddress: trader && trader.address ? trader.address : "",
         };
       })
-      .sort((a, b) => b.isVerified - a.isVerified); // Priority: Verified (true) > Unverified (false)
+      .sort((a, b) => {
+        // Priority: Pro (2) > Verified (1) > Basic (0)
+        const scoreA = a.isPro ? 2 : a.isVerified ? 1 : 0;
+        const scoreB = b.isPro ? 2 : b.isVerified ? 1 : 0;
+        return scoreB - scoreA;
+      });
 
     res.json(augmentedProducts);
   } catch (err) {

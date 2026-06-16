@@ -94,6 +94,7 @@ export default function GeneralStore() {
                   {p.imageUrl && <img src={p.imageUrl} alt={p.name} style={{ width: "100%", height: 150, objectFit: "cover", borderRadius: 8, marginBottom: 10 }} />}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <h4 style={{ margin: "0 0 4px", color: "#075e54" }}>{p.name}</h4>
+                    {p.isPro && <span title="Pro Trader" style={{ fontSize: '0.9rem' }}>💎</span>}
                     {p.isVerified && <span title="Verified Trader" style={{ color: '#1d9bf0', fontSize: '0.9rem' }}>✅</span>}
                   </div>
                   <p style={{ margin: 0, color: "#222", fontWeight: 'bold' }}>₦{p.price.toLocaleString()}</p>

@@ -398,11 +398,11 @@ export default function AdminDashboard() {
                   <td style={{ padding: '12px' }}>{t.companyName}</td>
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
-                        {t.isPro && '💎 PRO '}
-                        {t.isVerified && '✅ VERIFIED'}
-                        {!t.isPro && !t.isVerified && '⚪ BASIC'}
-                      </span>
+                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        {t.isPro && <span style={{ background: '#e3f2fd', color: '#0d47a1', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>💎 PRO</span>}
+                        {t.isVerified && <span style={{ background: '#e8f5e9', color: '#1b5e20', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>✅ VERIFIED</span>}
+                        {!t.isPro && !t.isVerified && <span style={{ background: '#f5f5f5', color: '#616161', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>⚪ BASIC</span>}
+                      </div>
                       <div style={{ width: '100px', background: '#eee', height: '6px', borderRadius: '3px' }}>
                         <div style={{ 
                           width: `${Math.min((t.dailyUsageCount / (t.isPro ? 200 : t.isVerified ? 50 : 10)) * 100, 100)}%`, 
