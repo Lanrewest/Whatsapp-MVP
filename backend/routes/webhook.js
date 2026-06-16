@@ -361,12 +361,6 @@ router.post("/", async (req, res) => {
         }
 
       case "payment_method_choice":
-        // Logic moved from old verification_choice to here to support the new two-step flow
-        if (msg === "1") {
-          // Paystack logic
-          if (!process.env.PAYSTACK_SECRET_KEY) {
-
-      case "verification_choice":
         if (msg === "1") {
           // Paystack logic
           if (!process.env.PAYSTACK_SECRET_KEY) {
@@ -393,7 +387,10 @@ router.post("/", async (req, res) => {
                 email: `${phoneDigits}@arewaconnect.com.ng`,
                 amount: 2000 * 100,
                 callback_url: `${frontendUrl}/store/${user.slug}`,
-                metadata: { phone: phoneDigits },
+                metadata: {
+                  phone: phoneDigits,
+                  tier: user.pendingTier || "verified",
+                },
               },
               {
                 headers: {
@@ -403,8 +400,12 @@ router.post("/", async (req, res) => {
             );
             user.state = "main_menu";
             await user.save();
+            const upgradeName =
+              user.pendingTier === "pro"
+                ? "Pro Subscription"
+                : "Verified Badge";
             twiml.message(
-              `${t.verifying}\n\nPay here to get your badge: ${response.data.data.authorization_url}`,
+              `${t.verifying}\n\nPay here for your ${upgradeName}: ${response.data.data.authorization_url}`,
             );
           } catch (err) {
             console.error(

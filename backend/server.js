@@ -200,6 +200,7 @@ app.post("/api/request", async (req, res) => {
     trader.lastUsageDate = today;
   }
 
+  let dailyLimit = 10;
   if (trader.isPro) dailyLimit = 200;
   else if (trader.isVerified) dailyLimit = 50;
 
@@ -278,9 +279,15 @@ app.get("/api/admin/stats", async (req, res) => {
 
     // Tier counts
     const tierStats = {
-      basic: await User.countDocuments({ isVerified: false, isPro: { $ne: true } }),
-      verified: await User.countDocuments({ isVerified: true, isPro: { $ne: true } }),
-      pro: await User.countDocuments({ isPro: true })
+      basic: await User.countDocuments({
+        isVerified: false,
+        isPro: { $ne: true },
+      }),
+      verified: await User.countDocuments({
+        isVerified: true,
+        isPro: { $ne: true },
+      }),
+      pro: await User.countDocuments({ isPro: true }),
     };
 
     const totalUsers = await User.countDocuments();
@@ -362,9 +369,9 @@ app.patch("/api/admin/set-tier/:id", async (req, res) => {
     const { tier } = req.body;
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: "User not found" });
-    
-    user.isVerified = tier === 'verified' || tier === 'pro';
-    user.isPro = tier === 'pro';
+
+    user.isVerified = tier === "verified" || tier === "pro";
+    user.isPro = tier === "pro";
     await user.save();
     res.json({ success: true });
   } catch (err) {
@@ -407,6 +414,7 @@ app.post("/api/payments/webhook", async (req, res) => {
 
     // Try to get phone from metadata, fallback to email prefix if metadata fails
     let phone = metadata && metadata.phone ? metadata.phone : null;
+    let tier = metadata && metadata.tier ? metadata.tier : "verified";
 
     if (!phone && event.data.customer && event.data.customer.email) {
       // If email is +2348071821807@arewaconnect.com.ng, extract the part before @
@@ -446,7 +454,10 @@ app.post("/api/payments/webhook", async (req, res) => {
             },
           ],
         },
-        { isVerified: true },
+        {
+          isVerified: true,
+          isPro: tier === "pro",
+        },
         { new: true },
       );
 
@@ -461,10 +472,13 @@ app.post("/api/payments/webhook", async (req, res) => {
 
       // Send a confirmation message via WhatsApp to the trader
       const lang = user.language || "en";
+      const tierLabel =
+        tier === "pro" ? "Pro User (200 daily messages)" : "Verified Trader";
+
       const successMsg =
         lang === "ha"
-          ? "An kammala biyan kuɗi! Yanzu kai ingantaccen ɗan kasuwa ne a Arewa Connect ✅. Shagon ka zai nuna alamar tabbatarwa ga kowa."
-          : "Payment successful! You are now a Verified Trader on Arewa Connect ✅. Your store will now display the verification badge to all customers.";
+          ? `An kammala biyan kuɗi! Yanzu kai ${tierLabel} ne a Arewa Connect ✅.`
+          : `Payment successful! You are now a ${tierLabel} on Arewa Connect ✅.`;
 
       await twilioClient.messages.create({
         from: process.env.TWILIO_WHATSAPP_NUMBER,
