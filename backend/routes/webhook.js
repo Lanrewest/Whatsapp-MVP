@@ -185,7 +185,9 @@ router.post("/", async (req, res) => {
     }
 
     // Define limits based on verification status
-    const dailyLimit = user.isVerified ? 50 : 10;
+    let dailyLimit = 10;
+    if (user.isPro) dailyLimit = 200;
+    else if (user.isVerified) dailyLimit = 50;
 
     if (user.dailyUsageCount >= dailyLimit) {
       // Only notify them once that they hit the limit
