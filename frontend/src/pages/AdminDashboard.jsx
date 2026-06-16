@@ -399,7 +399,9 @@ export default function AdminDashboard() {
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
-                        {t.isPro ? '💎 PRO' : t.isVerified ? '✅ VERIFIED' : '⚪ BASIC'}
+                        {t.isPro && '💎 PRO '}
+                        {t.isVerified && '✅ VERIFIED'}
+                        {!t.isPro && !t.isVerified && '⚪ BASIC'}
                       </span>
                       <div style={{ width: '100px', background: '#eee', height: '6px', borderRadius: '3px' }}>
                         <div style={{ 

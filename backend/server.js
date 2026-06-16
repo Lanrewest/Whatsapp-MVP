@@ -155,6 +155,7 @@ app.get("/api/products", async (req, res) => {
         return {
           ...p,
           isVerified: !!(trader && trader.isVerified),
+          isPro: !!(trader && trader.isPro),
           traderName:
             trader && trader.companyName
               ? trader.companyName

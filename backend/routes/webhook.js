@@ -60,7 +60,7 @@ const prompts = {
     verifying: "Generating your secure payment link...",
     verifyError: "Payment system busy. Please try again or contact support.",
     askVerifyChoice:
-      "Select Upgrade Type:\n1. Verified Badge (₦2,000 One-time)\n2. Pro Subscription (₦2,000 Monthly - 200 messages/day)",
+      "Select Upgrade Type:\n1. Verified Badge (₦2,000 One-time)\n2. Pro Subscription (₦2,000 Monthly - 200 msgs/day + includes Badge)",
     askPaymentMethod:
       "How would you like to pay for your badge?\n1. Pay Online (Instant ✅)\n2. Bank Transfer (Manual 🏦)",
     bankDetails:
@@ -102,7 +102,7 @@ const prompts = {
     verifying: "Ana shirya hanyar biyan kuɗi...",
     verifyError: "An sami matsala. Da fatan za a sake gwadawa.",
     askVerifyChoice:
-      "Zaɓi nau'in haɓakawa:\n1. Shaidar Tabbatarwa (₦2,000 Sau ɗaya)\n2. Pro Subscription (₦2,000 Duk wata - Sakonni 200 kowace rana)",
+      "Zaɓi nau'in haɓakawa:\n1. Shaidar Tabbatarwa (₦2,000 Sau ɗaya)\n2. Pro Subscription (₦2,000 Duk wata - Sakonni 200 + Shaidar ✅)",
     askPaymentMethod:
       "Yaya kake son biya?\n1. Biya ta Online (Nan take ✅)\n2. Canja wurin kudi ta Banki (Manual 🏦)",
     bankDetails:

@@ -173,7 +173,10 @@ export default function Store() {
           {trader ? (
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                <h2 style={{ color: "#333", fontSize: "1.5rem", margin: "0 0 4px" }}>{trader.companyName || "Trader Store"}</h2>
+                <h2 style={{ color: "#333", fontSize: "1.5rem", margin: "0 0 4px" }}>
+                  {trader.isPro && <span title="Pro Trader" style={{ marginRight: '5px' }}>💎</span>}
+                  {trader.companyName || "Trader Store"}
+                </h2>
                 {trader.isVerified && <span title="Verified Trader" style={{ fontSize: '1.2rem' }}>✅</span>}
               </div>
               {trader.address && <p style={{ color: "#666", margin: 0 }}>{trader.address}</p>}
