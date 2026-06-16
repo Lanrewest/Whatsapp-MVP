@@ -276,6 +276,13 @@ app.get("/api/admin/stats", async (req, res) => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
+    // Tier counts
+    const tierStats = {
+      basic: await User.countDocuments({ isVerified: false, isPro: { $ne: true } }),
+      verified: await User.countDocuments({ isVerified: true, isPro: { $ne: true } }),
+      pro: await User.countDocuments({ isPro: true })
+    };
+
     const totalUsers = await User.countDocuments();
     const totalProducts = await Product.countDocuments();
 
@@ -338,6 +345,7 @@ app.get("/api/admin/stats", async (req, res) => {
       todayStore,
       hourlyData,
       daily: trend7, // Default backward compatibility
+      tierStats,
       trends: {
         seven: trend7,
         thirty: trend30,
@@ -348,16 +356,19 @@ app.get("/api/admin/stats", async (req, res) => {
   }
 });
 
-// Toggle Trader Verification
-app.patch("/api/admin/verify/:id", async (req, res) => {
+// Set Trader Tier
+app.patch("/api/admin/set-tier/:id", async (req, res) => {
   try {
+    const { tier } = req.body;
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: "User not found" });
-    user.isVerified = !user.isVerified;
+    
+    user.isVerified = tier === 'verified' || tier === 'pro';
+    user.isPro = tier === 'pro';
     await user.save();
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: "Failed to update verification" });
+    res.status(500).json({ error: "Failed to update tier" });
   }
 });
 

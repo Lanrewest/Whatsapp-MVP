@@ -21,6 +21,11 @@ export default function AdminDashboard() {
       landing: [],
       store: []
     },
+    tierStats: {
+      basic: 0,
+      verified: 0,
+      pro: 0
+    },
     trends: {
       seven: null,
       thirty: null
@@ -95,14 +100,18 @@ export default function AdminDashboard() {
     }
   }, [productSearchTerm, stats.products]); // Dependency array fixed
 
-  const toggleVerify = async (userId) => {
+  const updateTier = async (userId, tier) => {
     try {
-      const res = await fetch(`${API_URL}/api/admin/verify/${userId}`, { method: 'PATCH' });
+      const res = await fetch(`${API_URL}/api/admin/set-tier/${userId}`, { 
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier })
+      });
       if (!res.ok) throw new Error("Server returned an error");
       fetchStats();
     } catch (err) {
       console.error(err);
-      alert("❌ Verification failed. Ensure backend is running.");
+      alert("❌ Tier update failed.");
     }
   };
 
@@ -219,6 +228,7 @@ export default function AdminDashboard() {
         <StatCard label="Total Products" value={stats.totalProducts} />
         <StatCard label="Landing Page" value={stats.todayLanding || 0} subValue={`Total: ${stats.landingVisits}`} />
         <StatCard label="Store Views" value={stats.todayStore || 0} subValue={`Total: ${stats.storeVisits}`} />
+        <StatCard label="Pro / Verified" value={stats.tierStats?.pro || 0} subValue={`Verified: ${stats.tierStats?.verified || 0}`} />
       </div>
 
       {/* Daily Growth Trends */}
@@ -376,9 +386,8 @@ export default function AdminDashboard() {
             <thead>
               <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
                 <th style={{ padding: '12px' }}>Company</th>
-                <th>Phone</th>
-                <th>Address</th>
-                <th>Status</th>
+                <th>Tier & Usage</th>
+                <th>Contact</th>
                 <th>Receipt</th>
                 <th>Actions</th>
               </tr>
@@ -387,9 +396,22 @@ export default function AdminDashboard() {
               {(stats.traders || []).map(t => (
                 <tr key={t._id} style={{ borderBottom: '1px solid #eee' }}>
                   <td style={{ padding: '12px' }}>{t.companyName}</td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
+                        {t.isPro ? '💎 PRO' : t.isVerified ? '✅ VERIFIED' : '⚪ BASIC'}
+                      </span>
+                      <div style={{ width: '100px', background: '#eee', height: '6px', borderRadius: '3px' }}>
+                        <div style={{ 
+                          width: `${Math.min((t.dailyUsageCount / (t.isPro ? 200 : t.isVerified ? 50 : 10)) * 100, 100)}%`, 
+                          background: t.dailyUsageCount > (t.isPro ? 180 : 8) ? 'red' : '#25d366', 
+                          height: '100%', 
+                          borderRadius: '3px' 
+                        }}></div>
+                      </div>
+                    </div>
+                  </td>
                   <td>{t.phone}</td>
-                  <td>{t.address || 'N/A'}</td>
-                  <td style={{ whiteSpace: 'nowrap' }}>{t.isVerified ? '✅ Verified' : '❌ Unverified'}</td>
                   <td>
                     {t.verificationReceiptUrl ? (
                       <a href={t.verificationReceiptUrl} target="_blank" rel="noreferrer" style={{ color: '#1d9bf0', fontSize: '0.8rem' }}>View Receipt</a>
@@ -398,9 +420,15 @@ export default function AdminDashboard() {
                     )}
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
-                    <button onClick={() => toggleVerify(t._id)} style={btnStyle(t.isVerified ? '#666' : '#25d366')}>
-                      {t.isVerified ? 'Unverify' : 'Verify'}
-                    </button>
+                    {!t.isPro && (
+                      <button onClick={() => updateTier(t._id, 'pro')} style={btnStyle('#075e54')}>Make Pro</button>
+                    )}
+                    {!t.isVerified && (
+                      <button onClick={() => updateTier(t._id, 'verified')} style={btnStyle('#25d366')}>Verify</button>
+                    )}
+                    {(t.isPro || t.isVerified) && (
+                      <button onClick={() => updateTier(t._id, 'basic')} style={btnStyle('#666')}>Reset</button>
+                    )}
                     <button onClick={() => deleteTrader(t._id)} style={btnStyle('#ff4d4d', 'white')}>Delete</button>
                   </td>
                 </tr>
