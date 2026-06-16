@@ -177,6 +177,32 @@ router.post("/", async (req, res) => {
     user.currentProduct = user.currentProduct || { name: "", price: 0 };
     user.state = user.state || "awaiting_language";
 
+    // 🕒 Subscription Management Logic
+    if (user.isPro && user.proExpiresAt) {
+      const now = new Date();
+      const expiry = new Date(user.proExpiresAt);
+      const daysRemaining = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+
+      if (daysRemaining <= 0) {
+        // Rollback to Verified
+        user.isPro = false;
+        user.proExpiresAt = null;
+        await user.save();
+        const expiredMsg = user.language === "ha" 
+          ? "Biyan kuɗin ku na 'Pro' ya ƙare. An mayar da ku asusun 'Verified'. 💎" 
+          : "Your Pro subscription has expired. You have been rolled back to a Verified account. 💎";
+        twiml.message(expiredMsg);
+      } else if (daysRemaining <= 3 && !user.expiryNotified) {
+        // Notify 3 days before expiration (one-time flag)
+        const warningMsg = user.language === "ha"
+          ? `Sauran kwanaki ${daysRemaining} biyan kuɗin ku na Pro ya ƙare. Ku sabunta don ci gaba da amfani da damar 200 messages.`
+          : `Your Pro subscription expires in ${daysRemaining} days. Renew now to keep your 200 messages/day limit!`;
+        twiml.message(warningMsg);
+        user.expiryNotified = true; // You'd need to add this field to the model too
+        await user.save();
+      }
+    }
+
     // 🛡️ Daily Usage Cap Logic
     const today = new Date().toISOString().split("T")[0];
     if (user.lastUsageDate !== today) {

@@ -15,6 +15,7 @@ const UserSchema = new mongoose.Schema(
     },
     isVerified: { type: Boolean, default: false },
     isPro: { type: Boolean, default: false },
+    proExpiresAt: { type: Date },
     dailyUsageCount: { type: Number, default: 0 },
     lastUsageDate: { type: String },
     pendingTier: { type: String },
