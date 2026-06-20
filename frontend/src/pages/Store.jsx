@@ -164,9 +164,9 @@ export default function Store() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f7f7f7", padding: 24 }}>
-      <div style={{ maxWidth: 600, margin: "0 auto" }}>
-        <header style={{ textAlign: "center", marginBottom: 32 }}>
+    <div style={{ minHeight: "100vh", background: "#f7f7f7", padding: 16 }}>
+      <div style={{ maxWidth: 980, margin: "0 auto" }}>
+        <header style={{ textAlign: "center", marginBottom: 24 }}>
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '1rem' }}>
             <Logo width="275" height="55" />
           </Link>
@@ -186,31 +186,54 @@ export default function Store() {
           )}
         </header>
         <section>
-          <h3 style={{ marginBottom: 16 }}>Products</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h3 style={{ margin: 0 }}>Products</h3>
+            <span style={{ color: '#666', fontSize: '0.9rem' }}>{products.length} item(s)</span>
+          </div>
           {products.length === 0 ? (
             <p style={{ color: "#888" }}>No products yet.</p>
           ) : (
-            products.map(p => (
-              <div key={p._id} style={{ background: "#fff", borderRadius: 8, boxShadow: "0 2px 8px #0001", marginBottom: 20, padding: 16, display: 'flex', gap: 16, alignItems: 'center' }}>
-                {p.imageUrl && <img src={p.imageUrl} alt={p.name} style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: 8 }} />}
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: "0 0 4px", color: "#075e54" }}>{p.name}</h3>
-                  <p style={{ margin: 0, color: "#222", fontWeight: 'bold' }}>₦{p.price.toLocaleString()}</p>
-                </div>
-                <div className="product-actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                   <button onClick={() => setSelectedProduct(p)} style={btnDetails}>Details</button>
-                   {cart[p._id] ? (
-                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <button onClick={() => removeFromCart(p._id)} style={btnSmall}>-</button>
-                        <span>{cart[p._id].qty}</span>
-                        <button onClick={() => addToCart(p)} style={btnSmall}>+</button>
-                     </div>
-                   ) : (
-                     <button onClick={() => addToCart(p)} style={btnAdd}>Add</button>
-                   )}
-                </div>
-              </div>
-            ))
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14 }}>
+              {products.map(p => {
+                const imageList = p.imageUrls && p.imageUrls.length > 0
+                  ? p.imageUrls
+                  : p.imageUrl
+                    ? [p.imageUrl]
+                    : [];
+
+                return (
+                  <div key={p._id} style={storeCardStyle}>
+                    {imageList[0] && (
+                      <img src={imageList[0]} alt={p.name} style={{ width: '100%', height: 176, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
+                    )}
+                    {imageList.length > 1 && (
+                      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 10 }}>
+                        {imageList.map((img, index) => (
+                          <img key={`${p._id}-${index}`} src={img} alt={`${p.name} ${index + 1}`} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 6, border: '1px solid #ddd' }} />
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <h3 style={{ margin: '0 0 4px', color: '#075e54', fontSize: '0.95rem', lineHeight: 1.3 }}>{p.name}</h3>
+                      <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>₦{Number(p.price || 0).toLocaleString()}</span>
+                    </div>
+                    {p.description && <p style={{ margin: '6px 0', color: '#666', fontSize: '0.9rem', minHeight: 38 }}>{p.description}</p>}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+                      <button onClick={() => setSelectedProduct(p)} style={btnDetails}>Details</button>
+                      {cart[p._id] ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <button onClick={() => removeFromCart(p._id)} style={btnSmall}>-</button>
+                          <span>{cart[p._id].qty}</span>
+                          <button onClick={() => addToCart(p)} style={btnSmall}>+</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => addToCart(p)} style={btnAdd}>Add</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </section>
 
@@ -319,6 +342,17 @@ export default function Store() {
     </div>
   );
 }
+
+const storeCardStyle = {
+  background: '#fff',
+  borderRadius: 10,
+  border: '1px solid #ececec',
+  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.06)',
+  padding: 12,
+  display: 'flex',
+  flexDirection: 'column',
+  height: '100%'
+};
 
 const btnAdd = {
   background: '#075e54',
