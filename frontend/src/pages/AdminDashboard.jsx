@@ -41,8 +41,13 @@ export default function AdminDashboard() {
   const [editingTraderId, setEditingTraderId] = useState(null);
   const [traderDraft, setTraderDraft] = useState({ companyName: "", address: "" });
   const [editingProductId, setEditingProductId] = useState(null);
-  const [productDraft, setProductDraft] = useState({ name: "", price: "", imageUrl: "" });
+  const [productDraft, setProductDraft] = useState({ name: "", price: "", imageUrl: "", imageUrls: [] });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [traderSearchTerm, setTraderSearchTerm] = useState("");
+  const [traderStatusFilter, setTraderStatusFilter] = useState("all");
+  const [showNewTraderForm, setShowNewTraderForm] = useState(false);
+  const [newTraderForm, setNewTraderForm] = useState({ phone: "", companyName: "", address: "" });
+  const [productStatusFilter, setProductStatusFilter] = useState("all");
 
   // State for collapsible sections
   const [collapsed, setCollapsed] = useState({
@@ -142,6 +147,40 @@ export default function AdminDashboard() {
     }
   };
 
+  const createTrader = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_URL}/api/admin/traders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTraderForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create trader');
+      setShowNewTraderForm(false);
+      setNewTraderForm({ phone: '', companyName: '', address: '' });
+      fetchStats();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Failed to create trader');
+    }
+  };
+
+  const updateTraderStatus = async (traderId, updates) => {
+    try {
+      const res = await fetch(`${API_URL}/api/admin/traders/${traderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (!res.ok) throw new Error('Update failed');
+      fetchStats();
+    } catch (err) {
+      console.error(err);
+      alert('❌ Unable to update trader status.');
+    }
+  };
+
   const startEditTrader = (trader) => {
     setEditingTraderId(trader._id);
     setTraderDraft({
@@ -182,33 +221,60 @@ export default function AdminDashboard() {
 
   const cancelEditProduct = () => {
     setEditingProductId(null);
-    setProductDraft({ name: "", price: "", imageUrl: "" });
+    setProductDraft({ name: "", price: "", imageUrl: "", imageUrls: [] });
   };
 
-  const uploadProductImage = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const uploadProductImages = async (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
 
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        setIsUploadingImage(true);
-        const res = await fetch(`${API_URL}/api/admin/upload-image`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageData: reader.result })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Upload failed");
-        setProductDraft(prev => ({ ...prev, imageUrl: data.url }));
-      } catch (err) {
-        console.error(err);
-        alert("❌ Unable to upload image.");
-      } finally {
-        setIsUploadingImage(false);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsUploadingImage(true);
+      const readers = files.map(
+        (file) =>
+          new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          })
+      );
+
+      const imageDataList = await Promise.all(readers);
+      const res = await fetch(`${API_URL}/api/admin/upload-images`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageDataList })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+      setProductDraft(prev => ({
+        ...prev,
+        imageUrls: data.urls,
+        imageUrl: data.urls[0] || prev.imageUrl
+      }));
+    } catch (err) {
+      console.error(err);
+      alert('❌ Unable to upload images.');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const toggleProductApproval = async (productId, currentValue) => {
+    try {
+      const res = await fetch(`${API_URL}/api/admin/products/${productId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isApproved: !currentValue })
+      });
+      if (!res.ok) throw new Error('Update failed');
+      fetchStats();
+    } catch (err) {
+      console.error(err);
+      alert('❌ Unable to update product approval.');
+    }
   };
 
   const saveProduct = async (productId) => {
@@ -225,7 +291,8 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           name: productDraft.name,
           price: updatedPrice,
-          imageUrl: productDraft.imageUrl
+          imageUrl: productDraft.imageUrl,
+          imageUrls: productDraft.imageUrls
         })
       });
       if (!res.ok) throw new Error("Update failed");
@@ -236,6 +303,27 @@ export default function AdminDashboard() {
       alert("❌ Unable to update product.");
     }
   };
+
+  const filteredTraders = (stats.traders || []).filter((t) => {
+    const search = traderSearchTerm.toLowerCase();
+    const matchesSearch =
+      (t.companyName || "").toLowerCase().includes(search) ||
+      (t.phone || "").toLowerCase().includes(search);
+    const matchesStatus =
+      traderStatusFilter === "all" ||
+      (traderStatusFilter === "approved" && t.isApproved !== false) ||
+      (traderStatusFilter === "pending" && t.isApproved === false) ||
+      (traderStatusFilter === "blocked" && t.isBlocked);
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredProducts = (productSearchTerm === "" ? (stats.products || []).slice(0, 5) : (stats.filteredProducts || []))
+    .filter((p) => {
+      if (productStatusFilter === "all") return true;
+      if (productStatusFilter === "approved") return p.isApproved !== false;
+      if (productStatusFilter === "pending") return p.isApproved === false;
+      return true;
+    });
 
   const exportToCSV = () => {
     const dateStr = new Date().toISOString().split('T')[0];
@@ -465,94 +553,156 @@ export default function AdminDashboard() {
         </div>
 
         {!collapsed.traders && (
-          <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem', minWidth: '600px' }}>
-            <thead>
-              <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
-                <th style={{ padding: '12px' }}>Company</th>
-                <th>Tier & Usage</th>
-                <th>Contact</th>
-                <th>Receipt</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(stats.traders || []).map(t => (
-                <tr key={t._id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '12px' }}>
-                    {editingTraderId === t._id ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <input
-                          value={traderDraft.companyName}
-                          onChange={(e) => setTraderDraft(prev => ({ ...prev, companyName: e.target.value }))}
-                          placeholder="Company name"
-                          style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
-                        />
-                        <textarea
-                          value={traderDraft.address}
-                          onChange={(e) => setTraderDraft(prev => ({ ...prev, address: e.target.value }))}
-                          placeholder="Address"
-                          rows="2"
-                          style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
-                        />
-                      </div>
-                    ) : (
-                      <div>
-                        <strong>{t.companyName || 'Unnamed Trader'}</strong>
-                        <div style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px' }}>{t.address || 'No address set'}</div>
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                        {t.isPro && <span style={{ background: '#e3f2fd', color: '#0d47a1', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>💎 PRO</span>}
-                        {t.isVerified && <span style={{ background: '#e8f5e9', color: '#1b5e20', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>✅ VERIFIED</span>}
-                        {!t.isPro && !t.isVerified && <span style={{ background: '#f5f5f5', color: '#616161', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>⚪ BASIC</span>}
-                      </div>
-                      <div style={{ width: '100px', background: '#eee', height: '6px', borderRadius: '3px' }}>
-                        <div style={{ 
-                          width: `${Math.min((t.dailyUsageCount / (t.isPro ? 200 : t.isVerified ? 50 : 10)) * 100, 100)}%`, 
-                          background: t.dailyUsageCount > (t.isPro ? 180 : 8) ? 'red' : '#25d366', 
-                          height: '100%', 
-                          borderRadius: '3px' 
-                        }}></div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>{t.phone}</td>
-                  <td>
-                    {t.verificationReceiptUrl ? (
-                      <a href={t.verificationReceiptUrl} target="_blank" rel="noreferrer" style={{ color: '#1d9bf0', fontSize: '0.8rem' }}>View Receipt</a>
-                    ) : (
-                      <span style={{ color: '#ccc', fontSize: '0.8rem' }}>None</span>
-                    )}
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    {editingTraderId === t._id ? (
-                      <>
-                        <button onClick={() => saveTrader(t._id)} style={btnStyle('#075e54')}>Save</button>
-                        <button onClick={cancelEditTrader} style={btnStyle('#666')}>Cancel</button>
-                      </>
-                    ) : (
-                      <button onClick={() => startEditTrader(t)} style={btnStyle('#1d9bf0')}>Edit Trader</button>
-                    )}
-                    {!t.isPro && (
-                      <button onClick={() => updateTier(t._id, 'pro')} style={btnStyle('#075e54')}>Make Pro</button>
-                    )}
-                    {!t.isVerified && (
-                      <button onClick={() => updateTier(t._id, 'verified')} style={btnStyle('#25d366')}>Verify</button>
-                    )}
-                    {(t.isPro || t.isVerified) && (
-                      <button onClick={() => updateTier(t._id, 'basic')} style={btnStyle('#666')}>Reset</button>
-                    )}
-                    <button onClick={() => deleteTrader(t._id)} style={btnStyle('#ff4d4d', 'white')}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          <div style={{ marginTop: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Search trader by name or phone"
+                  value={traderSearchTerm}
+                  onChange={(e) => setTraderSearchTerm(e.target.value)}
+                  style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #ddd', minWidth: '260px' }}
+                />
+                <select
+                  value={traderStatusFilter}
+                  onChange={(e) => setTraderStatusFilter(e.target.value)}
+                  style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #ddd' }}
+                >
+                  <option value="all">All traders</option>
+                  <option value="approved">Approved</option>
+                  <option value="pending">Pending</option>
+                  <option value="blocked">Blocked</option>
+                </select>
+              </div>
+              <button onClick={() => setShowNewTraderForm(prev => !prev)} style={btnStyle('#075e54')}>+ Register Trader</button>
+            </div>
+
+            {showNewTraderForm && (
+              <form onSubmit={createTrader} style={{ display: 'grid', gap: '10px', marginBottom: '1rem', padding: '1rem', background: '#f9fbfb', borderRadius: '10px' }}>
+                <input
+                  type="text"
+                  placeholder="Phone number"
+                  value={newTraderForm.phone}
+                  onChange={(e) => setNewTraderForm(prev => ({ ...prev, phone: e.target.value }))}
+                  required
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Company name"
+                  value={newTraderForm.companyName}
+                  onChange={(e) => setNewTraderForm(prev => ({ ...prev, companyName: e.target.value }))}
+                  required
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                />
+                <textarea
+                  placeholder="Address"
+                  value={newTraderForm.address}
+                  onChange={(e) => setNewTraderForm(prev => ({ ...prev, address: e.target.value }))}
+                  rows="2"
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                />
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="submit" style={btnStyle('#075e54')}>Create Trader</button>
+                  <button type="button" onClick={() => setShowNewTraderForm(false)} style={btnStyle('#666')}>Cancel</button>
+                </div>
+              </form>
+            )}
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
+                    <th style={{ padding: '12px' }}>Company</th>
+                    <th>Tier & Usage</th>
+                    <th>Contact</th>
+                    <th>Receipt</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTraders.map(t => (
+                    <tr key={t._id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '12px' }}>
+                        {editingTraderId === t._id ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <input
+                              value={traderDraft.companyName}
+                              onChange={(e) => setTraderDraft(prev => ({ ...prev, companyName: e.target.value }))}
+                              placeholder="Company name"
+                              style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
+                            />
+                            <textarea
+                              value={traderDraft.address}
+                              onChange={(e) => setTraderDraft(prev => ({ ...prev, address: e.target.value }))}
+                              placeholder="Address"
+                              rows="2"
+                              style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <strong>{t.companyName || 'Unnamed Trader'}</strong>
+                            <div style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px' }}>{t.address || 'No address set'}</div>
+                            <div style={{ marginTop: '6px' }}>
+                              {t.isBlocked ? <span style={{ background: '#fdecea', color: '#c62828', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Blocked</span> : (t.isApproved === false ? <span style={{ background: '#fff8e1', color: '#f9a825', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Pending</span> : <span style={{ background: '#e8f5e9', color: '#1b5e20', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Approved</span>)}
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                            {t.isPro && <span style={{ background: '#e3f2fd', color: '#0d47a1', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>💎 PRO</span>}
+                            {t.isVerified && <span style={{ background: '#e8f5e9', color: '#1b5e20', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>✅ VERIFIED</span>}
+                            {!t.isPro && !t.isVerified && <span style={{ background: '#f5f5f5', color: '#616161', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' }}>⚪ BASIC</span>}
+                          </div>
+                          <div style={{ width: '100px', background: '#eee', height: '6px', borderRadius: '3px' }}>
+                            <div style={{ 
+                              width: `${Math.min((t.dailyUsageCount / (t.isPro ? 200 : t.isVerified ? 50 : 10)) * 100, 100)}%`, 
+                              background: t.dailyUsageCount > (t.isPro ? 180 : 8) ? 'red' : '#25d366', 
+                              height: '100%', 
+                              borderRadius: '3px' 
+                            }}></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{t.phone}</td>
+                      <td>
+                        {t.verificationReceiptUrl ? (
+                          <a href={t.verificationReceiptUrl} target="_blank" rel="noreferrer" style={{ color: '#1d9bf0', fontSize: '0.8rem' }}>View Receipt</a>
+                        ) : (
+                          <span style={{ color: '#ccc', fontSize: '0.8rem' }}>None</span>
+                        )}
+                      </td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {editingTraderId === t._id ? (
+                          <>
+                            <button onClick={() => saveTrader(t._id)} style={btnStyle('#075e54')}>Save</button>
+                            <button onClick={cancelEditTrader} style={btnStyle('#666')}>Cancel</button>
+                          </>
+                        ) : (
+                          <button onClick={() => startEditTrader(t)} style={btnStyle('#1d9bf0')}>Edit Trader</button>
+                        )}
+                        <button onClick={() => updateTraderStatus(t._id, { isApproved: t.isApproved === false })} style={btnStyle(t.isApproved === false ? '#25d366' : '#f9a825')}>{t.isApproved === false ? 'Approve' : 'Pending'}</button>
+                        <button onClick={() => updateTraderStatus(t._id, { isBlocked: !t.isBlocked })} style={btnStyle(t.isBlocked ? '#25d366' : '#ff4d4d')}>{t.isBlocked ? 'Unblock' : 'Block'}</button>
+                        {!t.isPro && (
+                          <button onClick={() => updateTier(t._id, 'pro')} style={btnStyle('#075e54')}>Make Pro</button>
+                        )}
+                        {!t.isVerified && (
+                          <button onClick={() => updateTier(t._id, 'verified')} style={btnStyle('#25d366')}>Verify</button>
+                        )}
+                        {(t.isPro || t.isVerified) && (
+                          <button onClick={() => updateTier(t._id, 'basic')} style={btnStyle('#666')}>Reset</button>
+                        )}
+                        <button onClick={() => deleteTrader(t._id)} style={btnStyle('#ff4d4d', 'white')}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </div>
 
@@ -565,33 +715,41 @@ export default function AdminDashboard() {
 
         {!collapsed.products && (
           <div style={{ marginTop: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-          {/* Clean Search Toolbar */}
-          <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
-            <input 
-              type="text" 
-              placeholder="🔍 Search product name or trader phone..." 
-              value={productSearchTerm} 
-              onChange={e => setProductSearchTerm(e.target.value)}
-              style={{ 
-                width: '100%', 
-                padding: '10px 15px', 
-                borderRadius: '8px', 
-                border: '2px solid #eef2f1', 
-                background: '#f9fbfb',
-                outline: 'none',
-                fontSize: '0.9rem'
-              }}
-            />
-          </div>
-        </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
+              <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+                <input 
+                  type="text" 
+                  placeholder="🔍 Search product name or trader phone..." 
+                  value={productSearchTerm} 
+                  onChange={e => setProductSearchTerm(e.target.value)}
+                  style={{ 
+                    width: '100%', 
+                    padding: '10px 15px', 
+                    borderRadius: '8px', 
+                    border: '2px solid #eef2f1', 
+                    background: '#f9fbfb',
+                    outline: 'none',
+                    fontSize: '0.9rem'
+                  }}
+                />
+              </div>
+              <select
+                value={productStatusFilter}
+                onChange={(e) => setProductStatusFilter(e.target.value)}
+                style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #ddd' }}
+              >
+                <option value="all">All products</option>
+                <option value="approved">Approved</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
             <div style={{ overflowX: 'auto' }}>
-              {productSearchTerm === "" && (stats.filteredProducts || []).length > 5 ? (
+              {productSearchTerm === "" && filteredProducts.length > 5 ? (
                 <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
                   Showing 5 most recent items. Use the search bar to find more.
                 </p>
               ) : null}
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                 <thead style={{ background: '#f8f9fa' }}>
                   <tr style={{ textAlign: 'left', borderBottom: '2px solid #eee' }}>
                     <th style={{ padding: '12px' }}>Product Details</th>
@@ -601,7 +759,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(productSearchTerm === "" ? (stats.products || []).slice(0, 5) : (stats.filteredProducts || [])).map(p => (
+                  {filteredProducts.map(p => (
                     <tr key={p._id} style={{ borderBottom: '1px solid #f1f1f1' }}>
                       <td style={{ padding: '12px' }}>
                         {editingProductId === p._id ? (
@@ -614,21 +772,31 @@ export default function AdminDashboard() {
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={uploadProductImage}
+                              multiple
+                              onChange={uploadProductImages}
                               style={{ fontSize: '0.8rem' }}
                             />
-                            {productDraft.imageUrl && (
-                              <img src={productDraft.imageUrl} alt="Preview" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px' }} />
+                            {(productDraft.imageUrls || []).length > 0 && (
+                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                {(productDraft.imageUrls || []).map((img, idx) => (
+                                  <img key={idx} src={img} alt="Preview" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px' }} />
+                                ))}
+                              </div>
                             )}
                           </div>
                         ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            {p.imageUrl ? (
-                              <img src={p.imageUrl} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
-                            ) : (
-                              <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#aaa' }}>No Image</div>
-                            )}
-                            <span style={{ fontWeight: 500 }}>{p.name}</span>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              {p.imageUrl || (p.imageUrls && p.imageUrls.length > 0) ? (
+                                <img src={p.imageUrls && p.imageUrls.length > 0 ? p.imageUrls[0] : p.imageUrl} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
+                              ) : (
+                                <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#aaa' }}>No Image</div>
+                              )}
+                              <span style={{ fontWeight: 500 }}>{p.name}</span>
+                            </div>
+                            <div style={{ marginTop: '6px' }}>
+                              {p.isApproved === false ? <span style={{ background: '#fff8e1', color: '#f9a825', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Pending Approval</span> : <span style={{ background: '#e8f5e9', color: '#1b5e20', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Approved</span>}
+                            </div>
                           </div>
                         )}
                       </td>
@@ -657,6 +825,7 @@ export default function AdminDashboard() {
                         ) : (
                           <button onClick={() => startEditProduct(p)} style={{ ...btnStyle('#1d9bf0'), padding: '5px 10px' }}>Edit</button>
                         )}
+                        <button onClick={() => toggleProductApproval(p._id, p.isApproved !== false)} style={{ ...btnStyle(p.isApproved === false ? '#25d366' : '#f9a825'), padding: '5px 10px' }}>{p.isApproved === false ? 'Approve' : 'Pending'}</button>
                         <button onClick={() => deleteProduct(p._id)} style={{ ...btnStyle('#ff4d4d'), padding: '5px 10px' }}>Delete</button>
                       </td>
                     </tr>

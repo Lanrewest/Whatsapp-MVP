@@ -85,6 +85,14 @@ app.use(
   }),
 );
 
+const slugify = (text) =>
+  (text || "")
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
 mongoose
   .connect(process.env.MONGO_URI, {
     serverSelectionTimeoutMS: 5000,
@@ -130,10 +138,17 @@ app.get("/api/products/:key", async (req, res) => {
   // Normalize phone for lookup to ensure compatibility with older product entries
   const phoneDigits = user.phone.replace(/\D/g, "");
   const products = await Product.find({
-    $or: [
-      { traderPhone: user.phone },
-      { traderPhone: `whatsapp:${user.phone}` },
-      { traderPhone: { $regex: phoneDigits } },
+    $and: [
+      {
+        $or: [
+          { traderPhone: user.phone },
+          { traderPhone: `whatsapp:${user.phone}` },
+          { traderPhone: { $regex: phoneDigits } },
+        ],
+      },
+      {
+        $or: [{ isApproved: { $exists: false } }, { isApproved: true }],
+      },
     ],
   });
   res.json(products);
@@ -143,11 +158,15 @@ app.get("/api/products/:key", async (req, res) => {
 app.get("/api/products", async (req, res) => {
   try {
     // Fetch all products
-    const allProds = await Product.find({}).sort({ createdAt: -1 }).lean();
+    const allProds = await Product.find({
+      $or: [{ isApproved: { $exists: false } }, { isApproved: true }],
+    })
+      .sort({ createdAt: -1 })
+      .lean();
     // Fetch all traders to get names and addresses for the labels
     const traders = await User.find(
       {},
-      "phone isVerified isPro companyName address",
+      "phone isVerified isPro companyName address isBlocked isApproved",
     );
 
     const augmentedProducts = allProds
@@ -162,6 +181,8 @@ app.get("/api/products", async (req, res) => {
           ...p,
           isVerified: !!(trader && trader.isVerified),
           isPro: !!(trader && trader.isPro),
+          isApproved: trader ? trader.isApproved !== false : true,
+          isBlocked: !!(trader && trader.isBlocked),
           traderName:
             trader && trader.companyName
               ? trader.companyName
@@ -525,15 +546,93 @@ app.post("/api/admin/upload-image", async (req, res) => {
   }
 });
 
+// Upload multiple images for admin-managed content
+app.post("/api/admin/upload-images", async (req, res) => {
+  try {
+    const { imageDataList } = req.body;
+    if (!Array.isArray(imageDataList) || imageDataList.length === 0) {
+      return res.status(400).json({ error: "Missing image data list" });
+    }
+
+    const uploads = await Promise.all(
+      imageDataList.map((imageData) =>
+        cloudinary.uploader.upload(imageData, {
+          folder: "arewa-connect/products",
+          resource_type: "image",
+        }),
+      ),
+    );
+
+    res.json({
+      success: true,
+      urls: uploads.map((upload) => upload.secure_url),
+    });
+  } catch (err) {
+    console.error("Multiple image upload failed:", err);
+    res.status(500).json({ error: "Failed to upload images" });
+  }
+});
+
+// Create Trader (Admin)
+app.post("/api/admin/traders", async (req, res) => {
+  try {
+    const { phone, companyName, address } = req.body;
+    if (!phone || !companyName) {
+      return res
+        .status(400)
+        .json({ error: "Phone and company name are required" });
+    }
+
+    const normalizedPhone = phone.replace(/\D/g, "");
+    if (!normalizedPhone) {
+      return res.status(400).json({ error: "Invalid phone number" });
+    }
+
+    const existing = await User.findOne({
+      phone: { $in: [phone, normalizedPhone] },
+    });
+    if (existing) {
+      return res.status(409).json({ error: "Trader already exists" });
+    }
+
+    let baseSlug = slugify(companyName);
+    let slug = baseSlug || `trader-${normalizedPhone}`;
+    let counter = 1;
+    while (await User.findOne({ slug })) {
+      slug = `${baseSlug}-${counter}`;
+      counter += 1;
+    }
+
+    const user = await User.create({
+      phone,
+      companyName,
+      address,
+      slug,
+      isApproved: true,
+      isBlocked: false,
+      state: "idle",
+    });
+
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error("Trader creation failed:", err);
+    res.status(500).json({ error: "Failed to create trader" });
+  }
+});
+
 // Update Trader info (Admin)
 app.patch("/api/admin/traders/:id", async (req, res) => {
   try {
-    const { companyName, address } = req.body;
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { companyName, address },
-      { new: true },
-    );
+    const { companyName, address, isApproved, isBlocked } = req.body;
+    const updates = {};
+    if (companyName !== undefined) updates.companyName = companyName;
+    if (address !== undefined) updates.address = address;
+    if (isApproved !== undefined) updates.isApproved = Boolean(isApproved);
+    if (isBlocked !== undefined) updates.isBlocked = Boolean(isBlocked);
+
+    const user = await User.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+    });
 
     if (!user) return res.status(404).json({ error: "Trader not found" });
     res.json({ success: true, user });
@@ -545,11 +644,13 @@ app.patch("/api/admin/traders/:id", async (req, res) => {
 // Update Product (Admin)
 app.patch("/api/admin/products/:id", async (req, res) => {
   try {
-    const { name, price, imageUrl } = req.body;
+    const { name, price, imageUrl, imageUrls, isApproved } = req.body;
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (price !== undefined) updates.price = price;
     if (imageUrl !== undefined) updates.imageUrl = imageUrl;
+    if (imageUrls !== undefined) updates.imageUrls = imageUrls;
+    if (isApproved !== undefined) updates.isApproved = Boolean(isApproved);
 
     const product = await Product.findByIdAndUpdate(req.params.id, updates, {
       new: true,
