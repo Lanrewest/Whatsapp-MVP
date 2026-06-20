@@ -38,6 +38,11 @@ export default function AdminDashboard() {
   const [password, setPassword] = useState("");
 
   const [trendRange, setTrendRange] = useState("seven"); // "seven" or "thirty"
+  const [editingTraderId, setEditingTraderId] = useState(null);
+  const [traderDraft, setTraderDraft] = useState({ companyName: "", address: "" });
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [productDraft, setProductDraft] = useState({ name: "", price: "", imageUrl: "" });
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // State for collapsible sections
   const [collapsed, setCollapsed] = useState({
@@ -137,19 +142,98 @@ export default function AdminDashboard() {
     }
   };
 
-  const editProduct = async (product) => {
-    const newName = window.prompt("Edit Product Name:", product.name);
-    const newPrice = window.prompt("Edit Product Price (numbers only):", product.price);
-    
-    if (newName && newPrice) {
+  const startEditTrader = (trader) => {
+    setEditingTraderId(trader._id);
+    setTraderDraft({
+      companyName: trader.companyName || "",
+      address: trader.address || ""
+    });
+  };
+
+  const cancelEditTrader = () => {
+    setEditingTraderId(null);
+    setTraderDraft({ companyName: "", address: "" });
+  };
+
+  const saveTrader = async (traderId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/admin/traders/${traderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(traderDraft)
+      });
+      if (!res.ok) throw new Error("Update failed");
+      setEditingTraderId(null);
+      fetchStats();
+    } catch (err) {
+      console.error(err);
+      alert("❌ Unable to update trader details.");
+    }
+  };
+
+  const startEditProduct = (product) => {
+    setEditingProductId(product._id);
+    setProductDraft({
+      name: product.name || "",
+      price: product.price || "",
+      imageUrl: product.imageUrl || ""
+    });
+  };
+
+  const cancelEditProduct = () => {
+    setEditingProductId(null);
+    setProductDraft({ name: "", price: "", imageUrl: "" });
+  };
+
+  const uploadProductImage = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
       try {
-        await fetch(`${API_URL}/api/admin/products/${product._id}`, {
-          method: 'PATCH',
+        setIsUploadingImage(true);
+        const res = await fetch(`${API_URL}/api/admin/upload-image`, {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: newName, price: Number(newPrice) })
+          body: JSON.stringify({ imageData: reader.result })
         });
-        fetchStats();
-      } catch (err) { alert("Update failed"); }
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Upload failed");
+        setProductDraft(prev => ({ ...prev, imageUrl: data.url }));
+      } catch (err) {
+        console.error(err);
+        alert("❌ Unable to upload image.");
+      } finally {
+        setIsUploadingImage(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const saveProduct = async (productId) => {
+    try {
+      const updatedPrice = Number(productDraft.price);
+      if (Number.isNaN(updatedPrice)) {
+        alert("Please enter a valid price.");
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/api/admin/products/${productId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: productDraft.name,
+          price: updatedPrice,
+          imageUrl: productDraft.imageUrl
+        })
+      });
+      if (!res.ok) throw new Error("Update failed");
+      setEditingProductId(null);
+      fetchStats();
+    } catch (err) {
+      console.error(err);
+      alert("❌ Unable to update product.");
     }
   };
 
@@ -395,7 +479,30 @@ export default function AdminDashboard() {
             <tbody>
               {(stats.traders || []).map(t => (
                 <tr key={t._id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '12px' }}>{t.companyName}</td>
+                  <td style={{ padding: '12px' }}>
+                    {editingTraderId === t._id ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <input
+                          value={traderDraft.companyName}
+                          onChange={(e) => setTraderDraft(prev => ({ ...prev, companyName: e.target.value }))}
+                          placeholder="Company name"
+                          style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
+                        />
+                        <textarea
+                          value={traderDraft.address}
+                          onChange={(e) => setTraderDraft(prev => ({ ...prev, address: e.target.value }))}
+                          placeholder="Address"
+                          rows="2"
+                          style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <strong>{t.companyName || 'Unnamed Trader'}</strong>
+                        <div style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px' }}>{t.address || 'No address set'}</div>
+                      </div>
+                    )}
+                  </td>
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
@@ -422,6 +529,14 @@ export default function AdminDashboard() {
                     )}
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
+                    {editingTraderId === t._id ? (
+                      <>
+                        <button onClick={() => saveTrader(t._id)} style={btnStyle('#075e54')}>Save</button>
+                        <button onClick={cancelEditTrader} style={btnStyle('#666')}>Cancel</button>
+                      </>
+                    ) : (
+                      <button onClick={() => startEditTrader(t)} style={btnStyle('#1d9bf0')}>Edit Trader</button>
+                    )}
                     {!t.isPro && (
                       <button onClick={() => updateTier(t._id, 'pro')} style={btnStyle('#075e54')}>Make Pro</button>
                     )}
@@ -489,19 +604,59 @@ export default function AdminDashboard() {
                   {(productSearchTerm === "" ? (stats.products || []).slice(0, 5) : (stats.filteredProducts || [])).map(p => (
                     <tr key={p._id} style={{ borderBottom: '1px solid #f1f1f1' }}>
                       <td style={{ padding: '12px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          {p.imageUrl ? (
-                            <img src={p.imageUrl} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
-                          ) : (
-                            <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#aaa' }}>No Image</div>
-                          )}
-                          <span style={{ fontWeight: 500 }}>{p.name}</span>
-                        </div>
+                        {editingProductId === p._id ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <input
+                              value={productDraft.name}
+                              onChange={(e) => setProductDraft(prev => ({ ...prev, name: e.target.value }))}
+                              style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
+                            />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={uploadProductImage}
+                              style={{ fontSize: '0.8rem' }}
+                            />
+                            {productDraft.imageUrl && (
+                              <img src={productDraft.imageUrl} alt="Preview" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px' }} />
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            {p.imageUrl ? (
+                              <img src={p.imageUrl} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
+                            ) : (
+                              <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#aaa' }}>No Image</div>
+                            )}
+                            <span style={{ fontWeight: 500 }}>{p.name}</span>
+                          </div>
+                        )}
                       </td>
-                      <td style={{ padding: '12px', fontWeight: 'bold', color: '#075e54' }}>₦{p.price.toLocaleString()}</td>
+                      <td style={{ padding: '12px', fontWeight: 'bold', color: '#075e54' }}>
+                        {editingProductId === p._id ? (
+                          <input
+                            type="number"
+                            min="0"
+                            value={productDraft.price}
+                            onChange={(e) => setProductDraft(prev => ({ ...prev, price: e.target.value }))}
+                            style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
+                          />
+                        ) : (
+                          `₦${p.price.toLocaleString()}`
+                        )}
+                      </td>
                       <td style={{ padding: '12px', fontSize: '0.85rem', color: '#666' }}>{p.traderPhone}</td>
                       <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
-                        <button onClick={() => editProduct(p)} style={{ ...btnStyle('#1d9bf0'), padding: '5px 10px' }}>Edit</button>
+                        {editingProductId === p._id ? (
+                          <>
+                            <button onClick={() => saveProduct(p._id)} style={{ ...btnStyle('#075e54'), padding: '5px 10px' }} disabled={isUploadingImage}>
+                              {isUploadingImage ? 'Uploading...' : 'Save'}
+                            </button>
+                            <button onClick={cancelEditProduct} style={{ ...btnStyle('#666'), padding: '5px 10px' }}>Cancel</button>
+                          </>
+                        ) : (
+                          <button onClick={() => startEditProduct(p)} style={{ ...btnStyle('#1d9bf0'), padding: '5px 10px' }}>Edit</button>
+                        )}
                         <button onClick={() => deleteProduct(p._id)} style={{ ...btnStyle('#ff4d4d'), padding: '5px 10px' }}>Delete</button>
                       </td>
                     </tr>

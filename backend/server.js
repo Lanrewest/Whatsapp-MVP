@@ -7,6 +7,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const twilio = require("twilio");
 const crypto = require("crypto");
+const cloudinary = require("cloudinary").v2;
 
 // Security Check: Ensure all required environment variables are loaded
 // These must be checked BEFORE importing the routes that use them (like Cloudinary)
@@ -44,6 +45,8 @@ if (!process.env.CLOUDINARY_URL.startsWith("cloudinary://")) {
   );
   process.exit(1);
 }
+
+cloudinary.config();
 
 const webhook = require("./routes/webhook");
 const Product = require("./models/Product");
@@ -142,7 +145,10 @@ app.get("/api/products", async (req, res) => {
     // Fetch all products
     const allProds = await Product.find({}).sort({ createdAt: -1 }).lean();
     // Fetch all traders to get names and addresses for the labels
-    const traders = await User.find({}, "phone isVerified isPro companyName address");
+    const traders = await User.find(
+      {},
+      "phone isVerified isPro companyName address",
+    );
 
     const augmentedProducts = allProds
       .map((p) => {
@@ -499,15 +505,55 @@ app.post("/api/payments/webhook", async (req, res) => {
   res.sendStatus(200);
 });
 
+// Upload image for admin-managed product content
+app.post("/api/admin/upload-image", async (req, res) => {
+  try {
+    const { imageData } = req.body;
+    if (!imageData) {
+      return res.status(400).json({ error: "Missing image data" });
+    }
+
+    const uploadResult = await cloudinary.uploader.upload(imageData, {
+      folder: "arewa-connect/products",
+      resource_type: "image",
+    });
+
+    res.json({ success: true, url: uploadResult.secure_url });
+  } catch (err) {
+    console.error("Image upload failed:", err);
+    res.status(500).json({ error: "Failed to upload image" });
+  }
+});
+
+// Update Trader info (Admin)
+app.patch("/api/admin/traders/:id", async (req, res) => {
+  try {
+    const { companyName, address } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { companyName, address },
+      { new: true },
+    );
+
+    if (!user) return res.status(404).json({ error: "Trader not found" });
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update trader" });
+  }
+});
+
 // Update Product (Admin)
 app.patch("/api/admin/products/:id", async (req, res) => {
   try {
-    const { name, price } = req.body;
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      { name, price },
-      { new: true },
-    );
+    const { name, price, imageUrl } = req.body;
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (price !== undefined) updates.price = price;
+    if (imageUrl !== undefined) updates.imageUrl = imageUrl;
+
+    const product = await Product.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+    });
     if (!product) return res.status(404).json({ error: "Product not found" });
     res.json({ success: true, product });
   } catch (err) {
