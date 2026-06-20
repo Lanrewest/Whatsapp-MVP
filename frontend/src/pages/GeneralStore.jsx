@@ -111,7 +111,7 @@ export default function GeneralStore() {
               placeholder="Search products, traders, or locations..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ flex: 1, minWidth: 240, padding: 10, borderRadius: 6, border: '1px solid #ccc' }}
+              style={{ flex: 1, minWidth: 0, width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ccc' }}
             />
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={controlStyle}>
               <option value="newest">Newest</option>
@@ -134,7 +134,7 @@ export default function GeneralStore() {
             <p style={{ color: '#888' }}>No products found matching your search.</p>
           ) : (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14, alignItems: 'stretch' }}>
                 {visibleProducts.map((product) => {
                   const imageList = product.imageUrls && product.imageUrls.length > 0
                     ? product.imageUrls
@@ -144,7 +144,7 @@ export default function GeneralStore() {
                   const selectedImage = imageList[0] || '';
 
                   return (
-                    <div key={product._id} style={cardStyle}>
+                    <div key={product._id} style={{ ...cardStyle, width: '100%', boxSizing: 'border-box' }}>
                       {selectedImage && (
                         <img
                           src={selectedImage}
@@ -228,10 +228,11 @@ const cardStyle = {
   borderRadius: 10,
   border: '1px solid #ececec',
   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.06)',
-  padding: 14,
+  padding: 12,
   display: 'flex',
   flexDirection: 'column',
-  height: '100%'
+  height: '100%',
+  minWidth: 0
 };
 
 const linkStyle = {

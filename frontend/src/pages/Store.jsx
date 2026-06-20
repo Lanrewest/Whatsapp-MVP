@@ -193,7 +193,7 @@ export default function Store() {
           {products.length === 0 ? (
             <p style={{ color: "#888" }}>No products yet.</p>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14, alignItems: 'stretch' }}>
               {products.map(p => {
                 const imageList = p.imageUrls && p.imageUrls.length > 0
                   ? p.imageUrls
@@ -202,7 +202,7 @@ export default function Store() {
                     : [];
 
                 return (
-                  <div key={p._id} style={storeCardStyle}>
+                  <div key={p._id} style={{ ...storeCardStyle, width: '100%', boxSizing: 'border-box' }}>
                     {imageList[0] && (
                       <img src={imageList[0]} alt={p.name} style={{ width: '100%', height: 176, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
                     )}
@@ -351,7 +351,8 @@ const storeCardStyle = {
   padding: 12,
   display: 'flex',
   flexDirection: 'column',
-  height: '100%'
+  height: '100%',
+  minWidth: 0
 };
 
 const btnAdd = {
