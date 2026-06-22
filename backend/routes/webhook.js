@@ -286,19 +286,14 @@ router.post("/", async (req, res) => {
     else if (user.isVerified) dailyLimit = 50;
 
     if (user.dailyUsageCount >= dailyLimit) {
-      // Only notify them once that they hit the limit
-      if (user.dailyUsageCount === dailyLimit) {
-        user.dailyUsageCount++;
-        await user.save();
-        const limitMsg =
-          user.language === "ha"
-            ? "Kuyi hakuri, kun kai iyakacin sakonni na yau. Garzaya ku sami Verified Badge don karin dama."
-            : "You've reached your daily limit. Get a Verified Badge to increase your limit!";
-        twiml.message(limitMsg);
-        return res.type("text/xml").send(twiml.toString());
-      }
-      // For any subsequent message after the notification, silently ignore to save costs.
-      return res.sendStatus(200);
+      // This block now correctly handles all messages once the limit is reached.
+      // It sends a consistent message and then stops, preventing silent "OK" responses.
+      const limitMsg =
+        user.language === "ha"
+          ? "Kuyi hakuri, kun kai iyakacin saƙonni na yau. Da fatan za a sake gwadawa bayan awa 24, ko ku amsa da '6' don haɓaka asusun ku."
+          : "You have reached your daily message limit. Please try again after 24 hours, or reply with '6' to upgrade your account for a higher limit.";
+      twiml.message(limitMsg);
+      return res.type("text/xml").send(twiml.toString());
     }
 
     // If the user is within their limit, increment the usage count for this interaction.
