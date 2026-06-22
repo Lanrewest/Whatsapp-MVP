@@ -22,6 +22,7 @@ const UserSchema = new mongoose.Schema(
     lastUsageDate: { type: String },
     pendingTier: { type: String },
     verificationReceiptUrl: { type: String },
+    storeBannerUrl: { type: String, default: "" },
   },
   { timestamps: true },
 );

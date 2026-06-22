@@ -75,10 +75,10 @@ const prompts = {
         "Please send the image you want to use as your store banner.",
       bannerUpdated: "✅ Your store banner has been updated!",
       askFeatureProduct:
-        "Enter the exact name of the product you want to feature.",
+        "Reply with the number of the product you want to feature (e.g., '1').",
       productFeatured: "⭐ Product featured successfully!",
       askUnfeatureProduct:
-        "Enter the exact name of the product you want to un-feature.",
+        "Reply with the number of the product you want to un-feature (e.g., '1').",
       productUnfeatured: "Product is no longer featured.",
       notPro: "This is a Pro feature. Please upgrade your account to use it.",
       maxFeaturedReached:
@@ -90,10 +90,11 @@ const prompts = {
       askBannerImage:
         "Da fatan za a aiko da hoton da kake son amfani da shi a saman shaganka.",
       bannerUpdated: "✅ An sabunta hoton shaganka!",
-      askFeatureProduct: "Shigar da ainihin sunan kayan da kake son fitarwa.",
+      askFeatureProduct:
+        "Amsa da lambar kayan da kake son fitarwa (misali, '1').",
       productFeatured: "⭐ An fitar da kayan cikin nasara!",
       askUnfeatureProduct:
-        "Shigar da ainihin sunan kayan da kake son cirewa daga fitattun.",
+        "Amsa da lambar kayan da kake son cirewa daga fitattun (misali, '1').",
       productUnfeatured: "An cire kayan daga jerin fitattu.",
       notPro:
         "Wannan na masu asusun Pro ne kawai. Da fatan za a haɓaka asusunka.",
@@ -448,15 +449,44 @@ router.post("/", async (req, res) => {
           twiml.message(t.pro.askBannerImage);
         } else if (msg === "2") {
           // Feature Product
-          // Feature Product
-          user.state = "pro_featuring_product";
-          await user.save();
-          twiml.message(t.pro.askFeatureProduct);
+          const products = await Product.find({
+            traderPhone: from,
+            isFeatured: { $ne: true },
+          }).lean();
+          if (products.length === 0) {
+            twiml.message(
+              lang === "ha"
+                ? "Babu wasu kayayyaki da za a iya fitarwa."
+                : "You have no products available to feature.",
+            );
+          } else {
+            const productList = products
+              .map((p, i) => `${i + 1}. ${p.name}`)
+              .join("\n");
+            user.state = "pro_featuring_product";
+            await user.save();
+            twiml.message(`${productList}\n\n${t.pro.askFeatureProduct}`);
+          }
         } else if (msg === "3") {
           // Un-feature Product
-          user.state = "pro_unfeaturing_product";
-          await user.save();
-          twiml.message(t.pro.askUnfeatureProduct);
+          const featuredProducts = await Product.find({
+            traderPhone: from,
+            isFeatured: true,
+          }).lean();
+          if (featuredProducts.length === 0) {
+            twiml.message(
+              lang === "ha"
+                ? "Babu kayayyakin da aka fitar."
+                : "You have no featured products.",
+            );
+          } else {
+            const productList = featuredProducts
+              .map((p, i) => `${i + 1}. ${p.name}`)
+              .join("\n");
+            user.state = "pro_unfeaturing_product";
+            await user.save();
+            twiml.message(`${productList}\n\n${t.pro.askUnfeatureProduct}`);
+          }
         } else {
           twiml.message(t.pro.proMenu); // Re-ask if invalid option
         }
@@ -730,14 +760,21 @@ router.post("/", async (req, res) => {
           return res.type("text/xml").send(twiml.toString());
         }
 
-        const safeFeatureMsg = msg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const productToFeature = await Product.findOneAndUpdate(
-          {
-            traderPhone: from,
-            name: { $regex: new RegExp(`^${safeFeatureMsg}$`, "i") },
-          },
-          { isFeatured: true },
-        );
+        const productIndex = parseInt(msg, 10) - 1;
+        const productsToFeature = await Product.find({
+          traderPhone: from,
+          isFeatured: { $ne: true },
+        }).lean();
+        let productToFeature = null;
+
+        if (productIndex >= 0 && productIndex < productsToFeature.length) {
+          const product = productsToFeature[productIndex];
+          productToFeature = await Product.findByIdAndUpdate(
+            product._id,
+            { isFeatured: true },
+            { new: true },
+          );
+        }
 
         user.state = "main_menu";
         await user.save();
@@ -750,14 +787,21 @@ router.post("/", async (req, res) => {
         return res.type("text/xml").send(twiml.toString());
 
       case "pro_unfeaturing_product":
-        const safeUnfeatureMsg = msg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const productToUnfeature = await Product.findOneAndUpdate(
-          {
-            traderPhone: from,
-            name: { $regex: new RegExp(`^${safeUnfeatureMsg}$`, "i") },
-          },
-          { isFeatured: false },
-        );
+        const unfeatureIndex = parseInt(msg, 10) - 1;
+        const featuredProducts = await Product.find({
+          traderPhone: from,
+          isFeatured: true,
+        }).lean();
+        let productToUnfeature = null;
+
+        if (unfeatureIndex >= 0 && unfeatureIndex < featuredProducts.length) {
+          const product = featuredProducts[unfeatureIndex];
+          productToUnfeature = await Product.findByIdAndUpdate(
+            product._id,
+            { isFeatured: false },
+            { new: true },
+          );
+        }
 
         user.state = "main_menu";
         await user.save();
@@ -771,7 +815,6 @@ router.post("/", async (req, res) => {
     }
 
     // Default fallback
-    console.log(`ℹ️ No state matched for ${user.phone}, sending fallback.`);
     // Make sure main menu is correct in fallback too
     if (user.state === "main_menu") {
       let fallbackMainMenu = t.mainMenu;
