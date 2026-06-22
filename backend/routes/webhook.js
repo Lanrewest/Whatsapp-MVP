@@ -43,7 +43,7 @@ const prompts = {
     sendImageOrSkip: "Send image or type SKIP",
     productAdded: "✅ Product added!\n1. Add another\n2. View store",
     viewStore: (slug) =>
-      `${process.env.FRONTEND_URL || "https://arewaconnect.com.ng"}/store/${slug}`,
+      `You can view your store at:\n${process.env.FRONTEND_URL || "https://arewaconnect.com.ng"}/store/${slug}`,
     replyHi: "Reply Hi to start",
     welcomeBack: (name) => `Welcome back, ${name}! What would you like to do?`,
     mainMenu:
@@ -120,7 +120,7 @@ const prompts = {
     sendImageOrSkip: "Aika hoto ko rubuta SKIP",
     productAdded: "✅ An ƙara kaya!\n1. Ƙara wani\n2. Duba shago",
     viewStore: (slug) =>
-      `${process.env.FRONTEND_URL || "https://arewaconnect.com.ng"}/store/${slug}`,
+      `Zaku iya duba shagonku a:\n${process.env.FRONTEND_URL || "https://arewaconnect.com.ng"}/store/${slug}`,
     replyHi: "Amsa da Hi don farawa",
     welcomeBack: (name) => `Barka da dawowa, ${name}! Me kake son yi?`,
     mainMenu:
@@ -442,11 +442,12 @@ router.post("/", async (req, res) => {
           return res.type("text/xml").send(twiml.toString());
         }
         if (msg === "1") {
-          // Set Banner
+          // Set Banner - This was the bug. It should go to pro_setting_banner directly.
           user.state = "pro_setting_banner";
           await user.save();
           twiml.message(t.pro.askBannerImage);
         } else if (msg === "2") {
+          // Feature Product
           // Feature Product
           user.state = "pro_featuring_product";
           await user.save();
@@ -672,10 +673,10 @@ router.post("/", async (req, res) => {
         user.state = "main_menu";
         user.currentProduct = { name: "", price: 0 };
         await user.save();
-        let productAddedMainMenu = t.mainMenu;
-        if (user.isPro) productAddedMainMenu += "\n7. Pro Features 💎";
+        let postAddMainMenu = t.mainMenu;
+        if (user.isPro) postAddMainMenu += "\n7. Pro Features 💎";
 
-        twiml.message(t.productAdded + "\n" + productAddedMainMenu);
+        twiml.message("✅ Product added!\n\n" + postAddMainMenu);
         return res.type("text/xml").send(twiml.toString());
 
       case "updating_address":
