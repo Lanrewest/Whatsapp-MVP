@@ -221,8 +221,14 @@ router.post("/", async (req, res) => {
       if (daysRemaining <= 0) {
         // Rollback to Verified
         user.isPro = false;
+        user.storeBannerUrl = ""; // Remove banner
         user.proExpiresAt = null;
         await user.save();
+
+        // Remove all "featured" status from their products
+        await Product.updateMany({ traderPhone: user.phone }, { isFeatured: false });
+        console.log(`💎 Pro subscription expired for ${user.phone}. Benefits revoked.`);
+
         const expiredMsg =
           user.language === "ha"
             ? "Biyan kuɗin ku na 'Pro' ya ƙare. An mayar da ku asusun 'Verified'. 💎"

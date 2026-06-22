@@ -9,6 +9,7 @@ const ProductSchema = new mongoose.Schema(
     imageUrl: String,
     imageUrls: [{ type: String }],
     isApproved: { type: Boolean, default: true },
+    isFeatured: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
