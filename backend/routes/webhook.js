@@ -69,6 +69,40 @@ const prompts = {
       "🙏 Thank you! Your receipt has been received. Our team will verify it and update your badge shortly.",
     sendReceiptOnly: "Please send a photo/screenshot of your payment receipt.",
   },
+  pro: {
+    en: {
+      askBannerImage:
+        "Please send the image you want to use as your store banner.",
+      bannerUpdated: "✅ Your store banner has been updated!",
+      askFeatureProduct:
+        "Enter the exact name of the product you want to feature.",
+      productFeatured: "⭐ Product featured successfully!",
+      askUnfeatureProduct:
+        "Enter the exact name of the product you want to un-feature.",
+      productUnfeatured: "Product is no longer featured.",
+      notPro: "This is a Pro feature. Please upgrade your account to use it.",
+      maxFeaturedReached:
+        "You have reached the maximum of 3 featured products. Please un-feature another product first.",
+      proMenu:
+        "Pro Menu 💎:\n1. Set Store Banner\n2. Feature a Product\n3. Un-feature a Product",
+    },
+    ha: {
+      askBannerImage:
+        "Da fatan za a aiko da hoton da kake son amfani da shi a saman shaganka.",
+      bannerUpdated: "✅ An sabunta hoton shaganka!",
+      askFeatureProduct: "Shigar da ainihin sunan kayan da kake son fitarwa.",
+      productFeatured: "⭐ An fitar da kayan cikin nasara!",
+      askUnfeatureProduct:
+        "Shigar da ainihin sunan kayan da kake son cirewa daga fitattun.",
+      productUnfeatured: "An cire kayan daga jerin fitattu.",
+      notPro:
+        "Wannan na masu asusun Pro ne kawai. Da fatan za a haɓaka asusunka.",
+      maxFeaturedReached:
+        "Kun kai iyakacin kayayyaki da za'a iya fitarwa (guda 3). Da fatan za a cire wani.",
+      proMenu:
+        "Ayyukan Pro 💎:\n1. Sanya Hoton Shago (Banner)\n2. Fitar da Kaya (Feature)\n3. Cire Fitar da Kaya",
+    },
+  },
   ha: {
     welcome:
       "Barka da zuwa Arewa Connect! Da fatan za a zaɓi yaren ku:\n1. Turanci\n2. Hausa",
@@ -188,15 +222,17 @@ router.post("/", async (req, res) => {
         user.isPro = false;
         user.proExpiresAt = null;
         await user.save();
-        const expiredMsg = user.language === "ha" 
-          ? "Biyan kuɗin ku na 'Pro' ya ƙare. An mayar da ku asusun 'Verified'. 💎" 
-          : "Your Pro subscription has expired. You have been rolled back to a Verified account. 💎";
+        const expiredMsg =
+          user.language === "ha"
+            ? "Biyan kuɗin ku na 'Pro' ya ƙare. An mayar da ku asusun 'Verified'. 💎"
+            : "Your Pro subscription has expired. You have been rolled back to a Verified account. 💎";
         twiml.message(expiredMsg);
       } else if (daysRemaining <= 3 && !user.expiryNotified) {
         // Notify 3 days before expiration (one-time flag)
-        const warningMsg = user.language === "ha"
-          ? `Sauran kwanaki ${daysRemaining} biyan kuɗin ku na Pro ya ƙare. Ku sabunta don ci gaba da amfani da damar 200 messages.`
-          : `Your Pro subscription expires in ${daysRemaining} days. Renew now to keep your 200 messages/day limit!`;
+        const warningMsg =
+          user.language === "ha"
+            ? `Sauran kwanaki ${daysRemaining} biyan kuɗin ku na Pro ya ƙare. Ku sabunta don ci gaba da amfani da damar 200 messages.`
+            : `Your Pro subscription expires in ${daysRemaining} days. Renew now to keep your 200 messages/day limit!`;
         twiml.message(warningMsg);
         user.expiryNotified = true; // You'd need to add this field to the model too
         await user.save();
@@ -233,6 +269,9 @@ router.post("/", async (req, res) => {
     const lang = user.language;
     const t = prompts[lang];
 
+    // Add Pro prompts to the language object
+    t.pro = prompts.pro[lang];
+
     // 1. Unified Greeting & Reset Logic
     const isGreeting = /^(hi|start|market)/i.test(msg);
     const isJoinMessage = /^join/i.test(msg);
@@ -245,7 +284,9 @@ router.post("/", async (req, res) => {
       if (user.companyName && !isJoinMessage) {
         user.state = "main_menu";
         await user.save();
-        twiml.message(`${t.welcomeBack(user.companyName)}\n${t.mainMenu}`);
+        let mainMenu = t.mainMenu;
+        if (user.isPro) mainMenu += "\n7. Pro Features 💎";
+        twiml.message(`${t.welcomeBack(user.companyName)}\n${mainMenu}`);
         console.log(`✅ Response sent: Welcome back to ${user.phone}`);
         return res.type("text/xml").send(twiml.toString());
       }
@@ -275,9 +316,9 @@ router.post("/", async (req, res) => {
         await user.save();
         twiml.message(
           user.companyName
-            ? prompts[user.language].welcomeBack(user.companyName) +
-                "\n" +
+            ? `${prompts[user.language].welcomeBack(user.companyName)}\n${
                 prompts[user.language].mainMenu
+              }${user.isPro ? "\n7. Pro Features 💎" : ""}`
             : prompts[user.language].askCompany,
         );
         console.log(`✅ Response generated for ${user.phone}: ${user.state}`);
@@ -288,7 +329,10 @@ router.post("/", async (req, res) => {
           // Immutability Guard
           user.state = "main_menu";
           await user.save();
-          twiml.message(t.welcomeBack(user.companyName) + "\n" + t.mainMenu);
+          let mainMenu = t.mainMenu;
+          if (user.isPro) mainMenu += "\n7. Pro Features 💎";
+
+          twiml.message(t.welcomeBack(user.companyName) + "\n" + mainMenu);
           return res.type("text/xml").send(twiml.toString());
         }
 
@@ -323,7 +367,10 @@ router.post("/", async (req, res) => {
           user.address = compAddr;
           user.state = "main_menu";
           await user.save();
-          twiml.message(t.registrationComplete + "\n" + t.mainMenu);
+          let mainMenu = t.mainMenu;
+          if (user.isPro) mainMenu += "\n7. Pro Features 💎";
+
+          twiml.message(t.registrationComplete + "\n" + mainMenu);
         } else {
           // Fallback if they only sent the name
           user.state = "register_address";
@@ -336,7 +383,10 @@ router.post("/", async (req, res) => {
         user.address = msg;
         user.state = "main_menu";
         await user.save();
-        twiml.message(t.registrationComplete + "\n" + t.mainMenu);
+        let mainMenu = t.mainMenu;
+        if (user.isPro) mainMenu += "\n7. Pro Features 💎";
+
+        twiml.message(t.registrationComplete + "\n" + mainMenu);
         return res.type("text/xml").send(twiml.toString());
 
       case "idle":
@@ -372,8 +422,67 @@ router.post("/", async (req, res) => {
           await user.save();
           twiml.message(t.askVerifyChoice);
           return res.type("text/xml").send(twiml.toString());
+        } else if (msg === "7") {
+          if (user.isPro) {
+            user.state = "pro_menu_action";
+            await user.save();
+            twiml.message(t.pro.proMenu);
+          } else {
+            twiml.message(t.pro.notPro);
+          }
+          return res.type("text/xml").send(twiml.toString());
         }
         break;
+
+      case "pro_menu_action":
+        if (!user.isPro) {
+          user.state = "main_menu";
+          await user.save();
+          twiml.message(t.pro.notPro);
+          return res.type("text/xml").send(twiml.toString());
+        }
+        if (msg === "1") {
+          // Set Banner
+          user.state = "pro_setting_banner";
+          await user.save();
+          twiml.message(t.pro.askBannerImage);
+        } else if (msg === "2") {
+          // Feature Product
+          user.state = "pro_featuring_product";
+          await user.save();
+          twiml.message(t.pro.askFeatureProduct);
+        } else if (msg === "3") {
+          // Un-feature Product
+          user.state = "pro_unfeaturing_product";
+          await user.save();
+          twiml.message(t.pro.askUnfeatureProduct);
+        } else {
+          twiml.message(t.pro.proMenu); // Re-ask if invalid option
+        }
+        return res.type("text/xml").send(twiml.toString());
+
+      case "pro_setting_banner":
+        if (mediaUrl) {
+          try {
+            const authenticatedMediaUrl = mediaUrl.replace(
+              "https://api.twilio.com",
+              `https://${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}@api.twilio.com`,
+            );
+            const uploadResult = await cloudinary.uploader.upload(
+              authenticatedMediaUrl,
+              { folder: "arewaconnect_banners" },
+            );
+            user.storeBannerUrl = uploadResult.secure_url;
+            user.state = "main_menu";
+            await user.save();
+            twiml.message(t.pro.bannerUpdated);
+          } catch (e) {
+            twiml.message(t.sendReceiptOnly + " (Upload failed, try again)");
+          }
+        } else {
+          twiml.message(t.pro.askBannerImage);
+        }
+        return res.type("text/xml").send(twiml.toString());
 
       case "verification_choice":
         if (msg === "1" || msg === "2") {
@@ -563,7 +672,10 @@ router.post("/", async (req, res) => {
         user.state = "main_menu";
         user.currentProduct = { name: "", price: 0 };
         await user.save();
-        twiml.message(t.productAdded + "\n" + t.mainMenu);
+        let productAddedMainMenu = t.mainMenu;
+        if (user.isPro) productAddedMainMenu += "\n7. Pro Features 💎";
+
+        twiml.message(t.productAdded + "\n" + productAddedMainMenu);
         return res.type("text/xml").send(twiml.toString());
 
       case "updating_address":
@@ -583,7 +695,10 @@ router.post("/", async (req, res) => {
         user.state = "main_menu"; // Reset state to main menu
         await user.save();
         const feedback = result ? t.productDeleted : t.productNotFound;
-        twiml.message(feedback + "\n" + t.mainMenu);
+        let deleteMainMenu = t.mainMenu;
+        if (user.isPro) deleteMainMenu += "\n7. Pro Features 💎";
+
+        twiml.message(feedback + "\n" + deleteMainMenu);
         return res.type("text/xml").send(twiml.toString());
 
       case "awaiting_feedback":
@@ -596,12 +711,74 @@ router.post("/", async (req, res) => {
         });
         user.state = "main_menu";
         await user.save();
-        twiml.message(t.feedbackReceived + "\n" + t.mainMenu);
+        let feedbackMainMenu = t.mainMenu;
+        if (user.isPro) feedbackMainMenu += "\n7. Pro Features 💎";
+
+        twiml.message(t.feedbackReceived + "\n" + feedbackMainMenu);
+        return res.type("text/xml").send(twiml.toString());
+
+      case "pro_featuring_product":
+        const featuredCount = await Product.countDocuments({
+          traderPhone: from,
+          isFeatured: true,
+        });
+        if (featuredCount >= 3) {
+          user.state = "main_menu";
+          await user.save();
+          twiml.message(t.pro.maxFeaturedReached);
+          return res.type("text/xml").send(twiml.toString());
+        }
+
+        const safeFeatureMsg = msg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const productToFeature = await Product.findOneAndUpdate(
+          {
+            traderPhone: from,
+            name: { $regex: new RegExp(`^${safeFeatureMsg}$`, "i") },
+          },
+          { isFeatured: true },
+        );
+
+        user.state = "main_menu";
+        await user.save();
+        const featureFeedback = productToFeature
+          ? t.pro.productFeatured
+          : t.productNotFound;
+        let mainMenuFeature = t.mainMenu;
+        if (user.isPro) mainMenuFeature += "\n7. Pro Features 💎";
+        twiml.message(featureFeedback + "\n" + mainMenuFeature);
+        return res.type("text/xml").send(twiml.toString());
+
+      case "pro_unfeaturing_product":
+        const safeUnfeatureMsg = msg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const productToUnfeature = await Product.findOneAndUpdate(
+          {
+            traderPhone: from,
+            name: { $regex: new RegExp(`^${safeUnfeatureMsg}$`, "i") },
+          },
+          { isFeatured: false },
+        );
+
+        user.state = "main_menu";
+        await user.save();
+        const unfeatureFeedback = productToUnfeature
+          ? t.pro.productUnfeatured
+          : t.productNotFound;
+        let mainMenuUnfeature = t.mainMenu;
+        if (user.isPro) mainMenuUnfeature += "\n7. Pro Features 💎";
+        twiml.message(unfeatureFeedback + "\n" + mainMenuUnfeature);
         return res.type("text/xml").send(twiml.toString());
     }
 
     // Default fallback
     console.log(`ℹ️ No state matched for ${user.phone}, sending fallback.`);
+    // Make sure main menu is correct in fallback too
+    if (user.state === "main_menu") {
+      let fallbackMainMenu = t.mainMenu;
+      if (user.isPro) fallbackMainMenu += "\n7. Pro Features 💎";
+      twiml.message(fallbackMainMenu);
+      return res.type("text/xml").send(twiml.toString());
+    }
+
     twiml.message(t.replyHi);
     return res.type("text/xml").send(twiml.toString());
   } catch (error) {

@@ -39,7 +39,7 @@ export default function AdminDashboard() {
 
   const [trendRange, setTrendRange] = useState("seven"); // "seven" or "thirty"
   const [editingTraderId, setEditingTraderId] = useState(null);
-  const [traderDraft, setTraderDraft] = useState({ companyName: "", address: "" });
+  const [traderDraft, setTraderDraft] = useState({ companyName: "", address: "", storeBannerUrl: "" });
   const [editingProductId, setEditingProductId] = useState(null);
   const [productDraft, setProductDraft] = useState({ name: "", price: "", imageUrl: "", imageUrls: [] });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -207,7 +207,8 @@ export default function AdminDashboard() {
     setEditingTraderId(trader._id);
     setTraderDraft({
       companyName: trader.companyName || "",
-      address: trader.address || ""
+      address: trader.address || "",
+      storeBannerUrl: trader.storeBannerUrl || ""
     });
   };
 
@@ -298,6 +299,20 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error(err);
       alert('❌ Unable to update product approval.');
+    }
+  };
+
+  const toggleProductFeature = async (productId) => {
+    try {
+      const res = await fetch(`${API_URL}/api/admin/products/${productId}/toggle-feature`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error('Update failed');
+      fetchStats(); // Refresh data to show the change
+    } catch (err) {
+      console.error(err);
+      alert('❌ Unable to update feature status.');
     }
   };
 
@@ -663,6 +678,12 @@ export default function AdminDashboard() {
                               rows="2"
                               style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
                             />
+                            <input
+                              value={traderDraft.storeBannerUrl}
+                              onChange={(e) => setTraderDraft(prev => ({ ...prev, storeBannerUrl: e.target.value }))}
+                              placeholder="Store Banner Image URL"
+                              style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
+                            />
                           </div>
                         ) : (
                           <div>
@@ -865,6 +886,7 @@ export default function AdminDashboard() {
                               <span style={{ fontWeight: 500 }}>{p.name}</span>
                             </div>
                             <div style={{ marginTop: '6px' }}>
+                              {p.isFeatured && <span style={{ background: '#fffbe6', color: '#fadb14', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', marginRight: '5px' }}>⭐ Featured</span>}
                               {p.isApproved === false ? <span style={{ background: '#fff8e1', color: '#f9a825', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Pending Approval</span> : <span style={{ background: '#e8f5e9', color: '#1b5e20', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Approved</span>}
                             </div>
                           </div>
@@ -896,6 +918,7 @@ export default function AdminDashboard() {
                           <button onClick={() => startEditProduct(p)} style={{ ...btnStyle('#1d9bf0'), padding: '5px 10px' }}>Edit</button>
                         )}
                         <button onClick={() => toggleProductApproval(p._id, p.isApproved !== false)} style={{ ...btnStyle(p.isApproved === false ? '#25d366' : '#f9a825'), padding: '5px 10px' }}>{p.isApproved === false ? 'Approve' : 'Pending'}</button>
+                        <button onClick={() => toggleProductFeature(p._id)} style={{ ...btnStyle(p.isFeatured ? '#666' : '#ffc107'), padding: '5px 10px' }}>{p.isFeatured ? 'Unfeature' : 'Feature'}</button>
                         <button onClick={() => deleteProduct(p._id)} style={{ ...btnStyle('#ff4d4d'), padding: '5px 10px' }}>Delete</button>
                       </td>
                     </tr>

@@ -171,6 +171,13 @@ export default function Store() {
             <Logo width="275" height="55" />
           </Link>
           {trader ? (
+            <>
+            {trader.storeBannerUrl && (
+              <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', background: '#e0e0e0' }}>
+                <img src={trader.storeBannerUrl} alt={`${trader.companyName} banner`} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
+              </div>
+            )}
+
             <div style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <h2 style={{ color: "#333", fontSize: "1.5rem", margin: "0 0 4px" }}>
@@ -181,6 +188,7 @@ export default function Store() {
               </div>
               {trader.address && <p style={{ color: "#666", margin: 0 }}>{trader.address}</p>}
             </div>
+            </>
           ) : (
             <h2 style={{ color: "#333", fontSize: "1.5rem" }}>Trader Store</h2>
           )}
@@ -202,7 +210,12 @@ export default function Store() {
                     : [];
 
                 return (
-                  <div key={p._id} style={{ ...storeCardStyle, width: '100%', boxSizing: 'border-box' }}>
+                  <div key={p._id} style={{ 
+                      ...storeCardStyle, 
+                      width: '100%', 
+                      boxSizing: 'border-box',
+                      border: p.isFeatured ? '2px solid #ffc107' : '1px solid #ececec',
+                    }}>
                     {imageList[0] && (
                       <img src={imageList[0]} alt={p.name} style={{ width: '100%', height: 176, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
                     )}
@@ -214,7 +227,10 @@ export default function Store() {
                       </div>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <h3 style={{ margin: '0 0 4px', color: '#075e54', fontSize: '0.95rem', lineHeight: 1.3 }}>{p.name}</h3>
+                      <h3 style={{ margin: '0 0 4px', color: '#075e54', fontSize: '0.95rem', lineHeight: 1.3 }}>
+                        {p.isFeatured && <span title="Featured Product" style={{ marginRight: '4px' }}>⭐</span>}
+                        {p.name}
+                      </h3>
                       <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>₦{Number(p.price || 0).toLocaleString()}</span>
                     </div>
                     {p.description && <p style={{ margin: '6px 0', color: '#666', fontSize: '0.9rem', minHeight: 38 }}>{p.description}</p>}

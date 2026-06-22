@@ -150,7 +150,9 @@ app.get("/api/products/:key", async (req, res) => {
         $or: [{ isApproved: { $exists: false } }, { isApproved: true }],
       },
     ],
-  });
+  })
+    .sort({ isFeatured: -1, createdAt: -1 }) // Sort by featured status first, then by creation date
+    .lean();
   res.json(products);
 });
 
@@ -180,6 +182,7 @@ app.get("/api/products", async (req, res) => {
         return {
           ...p,
           isVerified: !!(trader && trader.isVerified),
+          isFeatured: !!p.isFeatured,
           isPro: !!(trader && trader.isPro),
           isApproved: trader ? trader.isApproved !== false : true,
           isBlocked: !!(trader && trader.isBlocked),
@@ -192,8 +195,11 @@ app.get("/api/products", async (req, res) => {
       })
       .sort((a, b) => {
         // Priority: Pro (2) > Verified (1) > Basic (0)
-        const scoreA = a.isPro ? 2 : a.isVerified ? 1 : 0;
-        const scoreB = b.isPro ? 2 : b.isVerified ? 1 : 0;
+        // Add featured status to the sorting logic
+        const scoreA = (a.isPro ? 2 : a.isVerified ? 1 : 0) + (a.isFeatured ? 0.5 : 0);
+        const scoreB = (b.isPro ? 2 : b.isVerified ? 1 : 0) + (b.isFeatured ? 0.5 : 0);
+        if (scoreB !== scoreA) return scoreB - scoreA;
+        // If scores are equal, sort by date
         return scoreB - scoreA;
       });
 
@@ -663,12 +669,13 @@ app.post("/api/admin/products", async (req, res) => {
 // Update Trader info (Admin)
 app.patch("/api/admin/traders/:id", async (req, res) => {
   try {
-    const { companyName, address, isApproved, isBlocked } = req.body;
+    const { companyName, address, isApproved, isBlocked, storeBannerUrl } = req.body;
     const updates = {};
     if (companyName !== undefined) updates.companyName = companyName;
     if (address !== undefined) updates.address = address;
     if (isApproved !== undefined) updates.isApproved = Boolean(isApproved);
     if (isBlocked !== undefined) updates.isBlocked = Boolean(isBlocked);
+    if (storeBannerUrl !== undefined) updates.storeBannerUrl = storeBannerUrl;
 
     const user = await User.findByIdAndUpdate(req.params.id, updates, {
       new: true,
@@ -698,6 +705,22 @@ app.patch("/api/admin/products/:id", async (req, res) => {
     if (!product) return res.status(404).json({ error: "Product not found" });
     res.json({ success: true, product });
   } catch (err) {
+    res.status(500).json({ error: "Failed to update product" });
+  }
+});
+
+// Toggle Product Feature Status (Admin)
+app.patch("/api/admin/products/:id/toggle-feature", async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: "Product not found" });
+
+    product.isFeatured = !product.isFeatured;
+    await product.save();
+
+    res.json({ success: true, product });
+  } catch (err) {
+    console.error("Failed to toggle feature status:", err);
     res.status(500).json({ error: "Failed to update product" });
   }
 });
