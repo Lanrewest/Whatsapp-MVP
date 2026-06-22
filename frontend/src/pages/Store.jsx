@@ -172,7 +172,7 @@ export default function Store() {
           </Link>
           {trader ? (
             <>
-            {trader.storeBannerUrl && (
+            {trader.isPro && trader.storeBannerUrl && (
               <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', background: '#e0e0e0' }}>
                 <img src={trader.storeBannerUrl} alt={`${trader.companyName} banner`} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
               </div>

@@ -226,8 +226,13 @@ router.post("/", async (req, res) => {
         await user.save();
 
         // Remove all "featured" status from their products
-        await Product.updateMany({ traderPhone: user.phone }, { isFeatured: false });
-        console.log(`💎 Pro subscription expired for ${user.phone}. Benefits revoked.`);
+        await Product.updateMany(
+          { traderPhone: user.phone },
+          { isFeatured: false },
+        );
+        console.log(
+          `💎 Pro subscription expired for ${user.phone}. Benefits revoked.`,
+        );
 
         const expiredMsg =
           user.language === "ha"
@@ -296,8 +301,8 @@ router.post("/", async (req, res) => {
       // It sends a consistent message and then stops, preventing silent "OK" responses.
       const limitMsg =
         user.language === "ha"
-          ? "Kuyi hakuri, kun kai iyakacin saƙonni na yau. Da fatan za a sake gwadawa bayan awa 24, ko ku amsa da '6' don haɓaka asusun ku."
-          : "You have reached your daily message limit. Please try again after 24 hours, or reply with '6' to upgrade your account for a higher limit.";
+          ? "Kuyi hakuri, kun kai iyakacin saƙonni na yau. Da fatan za a sake gwadawa gobe, ko ku amsa da '6' don haɓaka asusun ku."
+          : "You have reached your daily message limit. Please try again tomorrow, or reply with '6' to upgrade your account for a higher limit.";
       twiml.message(limitMsg);
       return res.type("text/xml").send(twiml.toString());
     }

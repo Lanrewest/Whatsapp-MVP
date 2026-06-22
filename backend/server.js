@@ -415,8 +415,24 @@ app.patch("/api/admin/set-tier/:id", async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
+    const wasPro = user.isPro;
+    const isNowPro = tier === "pro";
+
     user.isVerified = tier === "verified" || tier === "pro";
-    user.isPro = tier === "pro";
+    user.isPro = isNowPro;
+
+    // If the user is being downgraded from Pro, revoke their benefits.
+    if (wasPro && !isNowPro) {
+      user.storeBannerUrl = ""; // Clear the banner
+      await Product.updateMany(
+        { traderPhone: user.phone },
+        { isFeatured: false },
+      ); // Un-feature all products
+      console.log(
+        `💎 Admin downgraded ${user.phone} from Pro. Benefits revoked.`,
+      );
+    }
+
     await user.save();
     res.json({ success: true });
   } catch (err) {
