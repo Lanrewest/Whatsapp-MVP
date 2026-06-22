@@ -47,6 +47,8 @@ export default function AdminDashboard() {
   const [traderStatusFilter, setTraderStatusFilter] = useState("all");
   const [showNewTraderForm, setShowNewTraderForm] = useState(false);
   const [newTraderForm, setNewTraderForm] = useState({ phone: "", companyName: "", address: "" });
+  const [showNewProductForm, setShowNewProductForm] = useState(false);
+  const [newProductForm, setNewProductForm] = useState({ name: "", price: "", traderPhone: "", imageUrl: "", imageUrls: [] });
   const [productStatusFilter, setProductStatusFilter] = useState("all");
 
   // State for collapsible sections
@@ -166,6 +168,26 @@ export default function AdminDashboard() {
     }
   };
 
+  const createProduct = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_URL}/api/admin/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProductForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create product');
+      setShowNewProductForm(false);
+      setNewProductForm({ name: "", price: "", traderPhone: "", imageUrl: "", imageUrls: [] });
+      fetchStats();
+      alert('✅ Product created successfully!');
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Failed to create product');
+    }
+  };
+
   const updateTraderStatus = async (traderId, updates) => {
     try {
       const res = await fetch(`${API_URL}/api/admin/traders/${traderId}`, {
@@ -249,7 +271,9 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
 
-      setProductDraft(prev => ({
+      // If we are editing a product, update the draft. Otherwise, update the new product form.
+      const formSetter = editingProductId ? setProductDraft : setNewProductForm;
+      formSetter(prev => ({
         ...prev,
         imageUrls: data.urls,
         imageUrl: data.urls[0] || prev.imageUrl
@@ -715,7 +739,9 @@ export default function AdminDashboard() {
 
         {!collapsed.products && (
           <div style={{ marginTop: '1.5rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+
               <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
                 <input 
                   type="text" 
@@ -733,6 +759,7 @@ export default function AdminDashboard() {
                   }}
                 />
               </div>
+
               <select
                 value={productStatusFilter}
                 onChange={(e) => setProductStatusFilter(e.target.value)}
@@ -742,7 +769,50 @@ export default function AdminDashboard() {
                 <option value="approved">Approved</option>
                 <option value="pending">Pending</option>
               </select>
+              </div>
+              <button onClick={() => setShowNewProductForm(prev => !prev)} style={btnStyle('#075e54')}>+ Add New Product</button>
             </div>
+
+            {showNewProductForm && (
+              <form onSubmit={createProduct} style={{ display: 'grid', gap: '10px', marginBottom: '1rem', padding: '1rem', background: '#f9fbfb', borderRadius: '10px' }}>
+                <input
+                  type="text"
+                  placeholder="Trader's Phone Number"
+                  value={newProductForm.traderPhone}
+                  onChange={(e) => setNewProductForm(prev => ({ ...prev, traderPhone: e.target.value }))}
+                  required
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Product Name"
+                  value={newProductForm.name}
+                  onChange={(e) => setNewProductForm(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                />
+                <input
+                  type="number"
+                  placeholder="Price (e.g., 5000)"
+                  value={newProductForm.price}
+                  onChange={(e) => setNewProductForm(prev => ({ ...prev, price: e.target.value }))}
+                  required
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={uploadProductImages}
+                  style={{ fontSize: '0.8rem' }}
+                />
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="submit" style={btnStyle('#075e54')} disabled={isUploadingImage}>{isUploadingImage ? 'Uploading...' : 'Create Product'}</button>
+                  <button type="button" onClick={() => setShowNewProductForm(false)} style={btnStyle('#666')}>Cancel</button>
+                </div>
+              </form>
+            )}
+
             <div style={{ overflowX: 'auto' }}>
               {productSearchTerm === "" && filteredProducts.length > 5 ? (
                 <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>

@@ -620,6 +620,46 @@ app.post("/api/admin/traders", async (req, res) => {
   }
 });
 
+// Create Product (Admin)
+app.post("/api/admin/products", async (req, res) => {
+  try {
+    const { name, price, traderPhone, imageUrl, imageUrls } = req.body;
+    if (!name || !price || !traderPhone) {
+      return res
+        .status(400)
+        .json({ error: "Name, price, and trader phone are required" });
+    }
+
+    const normalizedPhone = traderPhone.replace(/\D/g, "");
+    const trader = await User.findOne({ phone: { $regex: normalizedPhone } });
+
+    if (!trader) {
+      return res.status(404).json({
+        error: `Trader with phone "${traderPhone}" not found. Please register the trader first.`,
+      });
+    }
+
+    const product = await Product.create({
+      name,
+      price: Number(price),
+      traderPhone: trader.phone, // Use the canonical phone from the trader's record
+      traderSlug: trader.slug,
+      imageUrl:
+        imageUrl || (imageUrls && imageUrls.length > 0 ? imageUrls[0] : ""),
+      imageUrls: imageUrls || [],
+      isApproved: true, // Products added by admin are auto-approved
+    });
+
+    res.status(201).json({ success: true, product });
+  } catch (err) {
+    console.error("Product creation failed:", err);
+    if (err.name === "ValidationError") {
+      return res.status(400).json({ error: err.message });
+    }
+    res.status(500).json({ error: "Failed to create product" });
+  }
+});
+
 // Update Trader info (Admin)
 app.patch("/api/admin/traders/:id", async (req, res) => {
   try {
