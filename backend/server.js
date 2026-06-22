@@ -196,8 +196,10 @@ app.get("/api/products", async (req, res) => {
       .sort((a, b) => {
         // Priority: Pro (2) > Verified (1) > Basic (0)
         // Add featured status to the sorting logic
-        const scoreA = (a.isPro ? 2 : a.isVerified ? 1 : 0) + (a.isFeatured ? 0.5 : 0);
-        const scoreB = (b.isPro ? 2 : b.isVerified ? 1 : 0) + (b.isFeatured ? 0.5 : 0);
+        const scoreA =
+          (a.isPro ? 2 : a.isVerified ? 1 : 0) + (a.isFeatured ? 0.5 : 0);
+        const scoreB =
+          (b.isPro ? 2 : b.isVerified ? 1 : 0) + (b.isFeatured ? 0.5 : 0);
         if (scoreB !== scoreA) return scoreB - scoreA;
         // If scores are equal, sort by date
         return scoreB - scoreA;
@@ -211,9 +213,13 @@ app.get("/api/products", async (req, res) => {
 
 // Get trader info by phone or slug
 app.get("/api/trader/:key", async (req, res) => {
-  let user = await User.findOne({ phone: req.params.key });
+  let user = await User.findOne({ phone: req.params.key })
+    .select("+storeBannerUrl")
+    .lean();
   if (!user) {
-    user = await User.findOne({ slug: req.params.key });
+    user = await User.findOne({ slug: req.params.key })
+      .select("+storeBannerUrl")
+      .lean();
   }
   if (!user) return res.status(404).json({ error: "Trader not found" });
   res.json(user);
@@ -669,7 +675,8 @@ app.post("/api/admin/products", async (req, res) => {
 // Update Trader info (Admin)
 app.patch("/api/admin/traders/:id", async (req, res) => {
   try {
-    const { companyName, address, isApproved, isBlocked, storeBannerUrl } = req.body;
+    const { companyName, address, isApproved, isBlocked, storeBannerUrl } =
+      req.body;
     const updates = {};
     if (companyName !== undefined) updates.companyName = companyName;
     if (address !== undefined) updates.address = address;
