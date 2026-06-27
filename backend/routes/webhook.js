@@ -330,6 +330,15 @@ router.post("/", async (req, res) => {
       user.dailyUsageCount++;
     }
 
+    // 1.5. Global Upgrade Command Handler
+    // This must come AFTER the daily limit check but BEFORE the main state switch.
+    if (msg === "6") {
+      user.state = "verification_choice";
+      await user.save();
+      twiml.message(t.askVerifyChoice);
+      return res.type("text/xml").send(twiml.toString());
+    }
+
     // 2. State Machine
     switch (user.state) {
       case "awaiting_language":
@@ -446,11 +455,6 @@ router.post("/", async (req, res) => {
           user.state = "awaiting_feedback";
           await user.save();
           twiml.message(t.askFeedback);
-          return res.type("text/xml").send(twiml.toString());
-        } else if (msg === "6") {
-          user.state = "verification_choice";
-          await user.save();
-          twiml.message(t.askVerifyChoice);
           return res.type("text/xml").send(twiml.toString());
         } else if (msg === "7") {
           if (user.isPro) {
