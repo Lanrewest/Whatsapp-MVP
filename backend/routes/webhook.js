@@ -49,7 +49,7 @@ const prompts = {
     mainMenu:
       "1. Add Product\n2. View My Store\n3. Update Address\n4. Delete Product\n5. Give Feedback\n6. Upgrade Account / Get Badge",
     upgradeLimitExceeded: (upgradeLink) =>
-      `You have reached your daily message limit. Please try again tomorrow, or reply with "6" to upgrade your account for a higher limit.\n\nUpgrade now: ${upgradeLink}`,
+      `You have reached your daily message limit. Please try again tomorrow, or reply with "6" to upgrade your account for a higher limit.`,
     productNotFound: "Product not found.",
     askNewAddress: "Please enter your new company address:",
     addressUpdated: "✅ Address updated successfully!",
@@ -129,7 +129,7 @@ const prompts = {
     mainMenu:
       "1. Ƙara Kaya\n2. Duba Shagona\n3. Gyara Adireshin Kamfani\n4. Goge Kaya\n5. Ba da Rahoto/Shawara\n6. Haɓaka Asusun ku",
     upgradeLimitExceeded: (upgradeLink) =>
-      `Kuyi hakuri, kun kai iyakacin saƙonni na yau. Da fatan za a sake gwadawa gobe, ko ku amsa da "6" don haɓaka asusun ku.\n\nHaɓaka yanzu: ${upgradeLink}`,
+      `Kuyi hakuri, kun kai iyakacin saƙonni na yau. Da fatan za a sake gwadawa gobe, ko ku amsa da "6" don haɓaka asusun ku.`,
     productNotFound: "Ba a sami kaya ba.",
     askNewAddress: "Da fatan za a shigar da sabon adireshin kamfani:",
     addressUpdated: "✅ An gyara adireshin kamfani cikin nasara!",
@@ -304,9 +304,16 @@ router.post("/", async (req, res) => {
       process.env.FRONTEND_URL || "https://arewaconnect.com.ng"
     ).replace(/\/$/, "");
     const upgradeLink = `${frontendBaseUrl}/upgrade`;
-    const isUpgradeRequest = msg === "6";
+    const isPartOfUpgradeFlow =
+      msg === "6" ||
+      user.state === "verification_choice" ||
+      user.state === "payment_method_choice";
 
-    if (!isUpgradeRequest && user.dailyUsageCount >= dailyLimit) {
+    if (
+      !isPartOfUpgradeFlow &&
+      user.dailyUsageCount >= dailyLimit &&
+      user.state !== "awaiting_transfer_receipt" // Also allow receipt uploads
+    ) {
       // This block now correctly handles all messages once the limit is reached.
       // It sends a consistent message and then stops, preventing silent "OK" responses.
       const limitMsg =
@@ -319,7 +326,7 @@ router.post("/", async (req, res) => {
 
     // If the user is within their limit, increment the usage count for this interaction.
     // We do it here so greetings are counted, but limit-exceeded messages are not double-counted.
-    if (!isUpgradeRequest) {
+    if (!isPartOfUpgradeFlow) {
       user.dailyUsageCount++;
     }
 
