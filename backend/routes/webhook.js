@@ -62,7 +62,7 @@ const prompts = {
     verifying: "Generating your secure payment link...",
     verifyError: "Payment system busy. Please try again or contact support.",
     askVerifyChoice:
-      "Select Upgrade Type:\n1. Verified Badge (₦2,000 One-time)\n2. Pro Subscription (₦2,000 Monthly - 200 msgs/day + includes Badge)",
+      "Select Upgrade Type:\n1. Verified Badge (₦2,000 Monthly - 50 msgs/day)\n2. Pro Subscription (₦3,000 Monthly - 200 msgs/day + Pro Features)",
     askPaymentMethod:
       "How would you like to pay for your badge?\n1. Pay Online (Instant ✅)\n2. Bank Transfer (Manual 🏦)",
     bankDetails:
@@ -141,7 +141,7 @@ const prompts = {
     verifying: "Ana shirya hanyar biyan kuɗi...",
     verifyError: "An sami matsala. Da fatan za a sake gwadawa.",
     askVerifyChoice:
-      "Zaɓi nau'in haɓakawa:\n1. Shaidar Tabbatarwa (₦2,000 Sau ɗaya)\n2. Pro Subscription (₦2,000 Duk wata - Sakonni 200 + Shaidar ✅)",
+      "Zaɓi nau'in haɓakawa:\n1. Verified Badge (₦2,000 Duk wata - Sakonni 50)\n2. Pro Subscription (₦3,000 Duk wata - Sakonni 200 + Ayyukan Pro)",
     askPaymentMethod:
       "Yaya kake son biya?\n1. Biya ta Online (Nan take ✅)\n2. Canja wurin kudi ta Banki (Manual 🏦)",
     bankDetails:
@@ -582,11 +582,17 @@ router.post("/", async (req, res) => {
               process.env.FRONTEND_URL || "https://arewaconnect.com.ng"
             ).replace(/\/$/, "");
 
+            const amount = user.pendingTier === "pro" ? 3000 : 2000;
+            const upgradeName =
+              user.pendingTier === "pro"
+                ? "Pro Subscription"
+                : "Verified Badge";
+
             const response = await axios.post(
               "https://api.paystack.co/transaction/initialize",
               {
                 email: `${phoneDigits}@arewaconnect.com.ng`,
-                amount: 2000 * 100,
+                amount: amount * 100, // Amount in kobo
                 callback_url: `${frontendUrl}/store/${user.slug}`,
                 metadata: {
                   phone: phoneDigits,
@@ -601,10 +607,6 @@ router.post("/", async (req, res) => {
             );
             user.state = "main_menu";
             await user.save();
-            const upgradeName =
-              user.pendingTier === "pro"
-                ? "Pro Subscription"
-                : "Verified Badge";
             twiml.message(
               `${t.verifying}\n\nPay here for your ${upgradeName}: ${response.data.data.authorization_url}`,
             );
