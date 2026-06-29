@@ -452,7 +452,9 @@ router.post("/", async (req, res) => {
           return res.type("text/xml").send(twiml.toString());
         } else if (msg === "2") {
           // Modify Product
-          const products = await Product.find({ traderPhone: from }).lean();
+          const products = await Product.find({
+            traderPhone: phoneDigits,
+          }).lean();
           if (products.length === 0) {
             twiml.message(t.noProducts);
           } else {
@@ -466,7 +468,9 @@ router.post("/", async (req, res) => {
           return res.type("text/xml").send(twiml.toString());
         } else if (msg === "3") {
           // Delete Product
-          const products = await Product.find({ traderPhone: from }).lean();
+          const products = await Product.find({
+            traderPhone: phoneDigits,
+          }).lean();
           if (products.length === 0) {
             twiml.message(t.noProducts);
           } else {
@@ -516,7 +520,11 @@ router.post("/", async (req, res) => {
           }
           return res.type("text/xml").send(twiml.toString());
         }
-        break;
+        // Fallback for main_menu: if no option is matched, show the menu again.
+        let defaultMainMenu = t.mainMenu;
+        if (user.isPro) defaultMainMenu += "\n8. Pro Features 💎";
+        twiml.message(defaultMainMenu);
+        return res.type("text/xml").send(twiml.toString());
 
       case "pro_menu_action":
         if (!user.isPro) {
@@ -533,7 +541,7 @@ router.post("/", async (req, res) => {
         } else if (msg === "2") {
           // Feature Product
           const products = await Product.find({
-            traderPhone: from,
+            traderPhone: phoneDigits,
             isFeatured: { $ne: true },
           }).lean();
           if (products.length === 0) {
@@ -553,7 +561,7 @@ router.post("/", async (req, res) => {
         } else if (msg === "3") {
           // Un-feature Product
           const featuredProducts = await Product.find({
-            traderPhone: from,
+            traderPhone: phoneDigits,
             isFeatured: true,
           }).lean();
           if (featuredProducts.length === 0) {
@@ -804,7 +812,7 @@ router.post("/", async (req, res) => {
       case "deleting_product_selection":
         const deleteIndex = parseInt(msg, 10) - 1;
         const productsToDelete = await Product.find({
-          traderPhone: from,
+          traderPhone: phoneDigits,
         }).lean();
         let deletedProduct = null;
 
@@ -825,7 +833,7 @@ router.post("/", async (req, res) => {
       case "modifying_product_selection":
         const modifyIndex = parseInt(msg, 10) - 1;
         const productsToModify = await Product.find({
-          traderPhone: from,
+          traderPhone: phoneDigits,
         }).lean();
 
         if (modifyIndex >= 0 && modifyIndex < productsToModify.length) {
@@ -919,7 +927,7 @@ router.post("/", async (req, res) => {
 
       case "pro_featuring_product":
         const featuredCount = await Product.countDocuments({
-          traderPhone: from,
+          traderPhone: phoneDigits,
           isFeatured: true,
         });
         if (featuredCount >= 3) {
@@ -931,7 +939,7 @@ router.post("/", async (req, res) => {
 
         const productIndex = parseInt(msg, 10) - 1;
         const productsToFeature = await Product.find({
-          traderPhone: from,
+          traderPhone: phoneDigits,
           isFeatured: { $ne: true },
         }).lean();
         let productToFeature = null;
@@ -958,7 +966,7 @@ router.post("/", async (req, res) => {
       case "pro_unfeaturing_product":
         const unfeatureIndex = parseInt(msg, 10) - 1;
         const featuredProducts = await Product.find({
-          traderPhone: from,
+          traderPhone: phoneDigits,
           isFeatured: true,
         }).lean();
         let productToUnfeature = null;
