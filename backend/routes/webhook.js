@@ -46,14 +46,22 @@ const prompts = {
       `You can view your store at:\n${process.env.FRONTEND_URL || "https://arewaconnect.com.ng"}/store/${slug}`,
     replyHi: "Reply Hi to start",
     welcomeBack: (name) => `Welcome back, ${name}! What would you like to do?`,
+    // Re-ordered for better flow
     mainMenu:
-      "1. Add Product\n2. View My Store\n3. Update Address\n4. Delete Product\n5. Give Feedback\n6. Upgrade Account / Get Badge",
+      "1. Add Product\n2. Modify Product\n3. Delete Product\n4. View My Store\n5. Update Address\n6. Give Feedback\n7. Upgrade Account",
     upgradeLimitExceeded: (upgradeLink) =>
       `You have reached your daily message limit. Please try again tomorrow, or reply with "6" to upgrade your account for a higher limit.`,
     productNotFound: "Product not found.",
+    noProducts: "You have not added any products yet.",
+    askDeleteProduct:
+      "Reply with the number of the product you want to delete:",
+    askModifyProduct:
+      "Reply with the number of the product you want to modify:",
+    askModifyAction: "What do you want to modify?\n1. Name\n2. Price",
+    askNewName: "Please enter the new product name:",
+    askNewPrice: "Please enter the new product price:",
     askNewAddress: "Please enter your new company address:",
     addressUpdated: "✅ Address updated successfully!",
-    askDeleteProduct: "Enter the exact name of the product you want to delete:",
     productDeleted: "🗑️ Product deleted successfully.",
     askFeedback:
       "We value your input! Please type your feedback/suggestions for Arewa Connect below:",
@@ -126,14 +134,20 @@ const prompts = {
       `Zaku iya duba shagonku a:\n${process.env.FRONTEND_URL || "https://arewaconnect.com.ng"}/store/${slug}`,
     replyHi: "Amsa da Hi don farawa",
     welcomeBack: (name) => `Barka da dawowa, ${name}! Me kake son yi?`,
+    // Re-ordered for better flow
     mainMenu:
-      "1. Ƙara Kaya\n2. Duba Shagona\n3. Gyara Adireshin Kamfani\n4. Goge Kaya\n5. Ba da Rahoto/Shawara\n6. Haɓaka Asusun ku",
+      "1. Ƙara Kaya\n2. Gyara Kaya\n3. Goge Kaya\n4. Duba Shagona\n5. Gyara Adireshi\n6. Ba da Rahoto/Shawara\n7. Haɓaka Asusu",
     upgradeLimitExceeded: (upgradeLink) =>
       `Kuyi hakuri, kun kai iyakacin saƙonni na yau. Da fatan za a sake gwadawa gobe, ko ku amsa da "6" don haɓaka asusun ku.`,
     productNotFound: "Ba a sami kaya ba.",
+    noProducts: "Baku ƙara kowane kaya ba tukuna.",
+    askDeleteProduct: "Amsa da lambar kayan da kake son gogewa:",
+    askModifyProduct: "Amsa da lambar kayan da kake son gyarawa:",
+    askModifyAction: "Me kake son gyarawa?\n1. Suna\n2. Farashi",
+    askNewName: "Da fatan za a shigar da sabon sunan kayan:",
+    askNewPrice: "Da fatan za a shigar da sabon farashin kayan:",
     askNewAddress: "Da fatan za a shigar da sabon adireshin kamfani:",
     addressUpdated: "✅ An gyara adireshin kamfani cikin nasara!",
-    askDeleteProduct: "Shigar da ainihin sunan kayan da kake son gogewa:",
     productDeleted: "🗑️ An goge kayan cikin nasara.",
     askFeedback:
       "Muna daraja ra'ayin ku! Da fatan za a rubuta shawara ko korafi game da Arewa Connect a kasa:",
@@ -332,7 +346,8 @@ router.post("/", async (req, res) => {
 
     // 1.5. Global Upgrade Command Handler
     // This must come AFTER the daily limit check but BEFORE the main state switch.
-    if (msg === "6") {
+    if (msg === "7") {
+      // Changed from 6 to 7 due to menu re-order
       user.state = "verification_choice";
       await user.save();
       twiml.message(t.askVerifyChoice);
@@ -436,31 +451,66 @@ router.post("/", async (req, res) => {
           twiml.message(t.enterProductName);
           return res.type("text/xml").send(twiml.toString());
         } else if (msg === "2") {
+          // Modify Product
+          const products = await Product.find({ traderPhone: from }).lean();
+          if (products.length === 0) {
+            twiml.message(t.noProducts);
+          } else {
+            const productList = products
+              .map((p, i) => `${i + 1}. ${p.name} - ₦${p.price}`)
+              .join("\n");
+            user.state = "modifying_product_selection";
+            await user.save();
+            twiml.message(`${productList}\n\n${t.askModifyProduct}`);
+          }
+          return res.type("text/xml").send(twiml.toString());
+        } else if (msg === "3") {
+          // Delete Product
+          const products = await Product.find({ traderPhone: from }).lean();
+          if (products.length === 0) {
+            twiml.message(t.noProducts);
+          } else {
+            const productList = products
+              .map((p, i) => `${i + 1}. ${p.name}`)
+              .join("\n");
+            user.state = "deleting_product_selection";
+            await user.save();
+            twiml.message(`${productList}\n\n${t.askDeleteProduct}`);
+          }
+          return res.type("text/xml").send(twiml.toString());
+        } else if (msg === "4") {
+          // View Store
           const storeLink = user.slug
             ? t.viewStore(user.slug)
             : t.viewStore(from);
           twiml.message(storeLink);
           return res.type("text/xml").send(twiml.toString());
-        } else if (msg === "3") {
+        } else if (msg === "5") {
+          // Update Address
           user.state = "updating_address";
           await user.save();
           twiml.message(t.askNewAddress);
           return res.type("text/xml").send(twiml.toString());
-        } else if (msg === "4") {
-          user.state = "deleting_product";
-          await user.save();
-          twiml.message(t.askDeleteProduct);
-          return res.type("text/xml").send(twiml.toString());
-        } else if (msg === "5") {
+        } else if (msg === "6") {
+          // Give Feedback
           user.state = "awaiting_feedback";
           await user.save();
           twiml.message(t.askFeedback);
           return res.type("text/xml").send(twiml.toString());
-        } else if (msg === "7") {
+        } else if (msg === "8") {
+          // Pro Features (now option 8)
           if (user.isPro) {
             user.state = "pro_menu_action";
             await user.save();
-            twiml.message(t.pro.proMenu);
+            // We need to check if the pro menu exists before sending
+            if (t.pro && t.pro.proMenu) {
+              twiml.message(t.pro.proMenu);
+            } else {
+              // Fallback if pro prompts aren't loaded for some reason
+              user.state = "main_menu";
+              await user.save();
+              twiml.message("Pro features are available.");
+            }
           } else {
             twiml.message(t.pro.notPro);
           }
@@ -751,20 +801,104 @@ router.post("/", async (req, res) => {
         twiml.message(t.addressUpdated + "\n" + t.mainMenu);
         return res.type("text/xml").send(twiml.toString());
 
-      case "deleting_product":
-        // Escape special characters to prevent Regex crashes
-        const safeMsg = msg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const result = await Product.findOneAndDelete({
+      case "deleting_product_selection":
+        const deleteIndex = parseInt(msg, 10) - 1;
+        const productsToDelete = await Product.find({
           traderPhone: from,
-          name: { $regex: new RegExp(`^${safeMsg}$`, "i") },
-        });
-        user.state = "main_menu"; // Reset state to main menu
+        }).lean();
+        let deletedProduct = null;
+
+        if (deleteIndex >= 0 && deleteIndex < productsToDelete.length) {
+          const product = productsToDelete[deleteIndex];
+          deletedProduct = await Product.findByIdAndDelete(product._id);
+        }
+
+        user.state = "main_menu";
         await user.save();
-        const feedback = result ? t.productDeleted : t.productNotFound;
+        const feedback = deletedProduct ? t.productDeleted : t.productNotFound;
         let deleteMainMenu = t.mainMenu;
-        if (user.isPro) deleteMainMenu += "\n7. Pro Features 💎";
+        if (user.isPro) deleteMainMenu += "\n8. Pro Features 💎";
 
         twiml.message(feedback + "\n" + deleteMainMenu);
+        return res.type("text/xml").send(twiml.toString());
+
+      case "modifying_product_selection":
+        const modifyIndex = parseInt(msg, 10) - 1;
+        const productsToModify = await Product.find({
+          traderPhone: from,
+        }).lean();
+
+        if (modifyIndex >= 0 && modifyIndex < productsToModify.length) {
+          const product = productsToModify[modifyIndex];
+          user.currentProductId = product._id; // Store the ID of the product to modify
+          user.state = "modifying_product_choice";
+          await user.save();
+          twiml.message(t.askModifyAction);
+        } else {
+          user.state = "main_menu";
+          await user.save();
+          twiml.message(t.productNotFound + "\n" + t.mainMenu);
+        }
+        return res.type("text/xml").send(twiml.toString());
+
+      case "modifying_product_choice":
+        if (msg === "1") {
+          // Modify Name
+          user.state = "modifying_product_name";
+          await user.save();
+          twiml.message(t.askNewName);
+        } else if (msg === "2") {
+          // Modify Price
+          user.state = "modifying_product_price";
+          await user.save();
+          twiml.message(t.askNewPrice);
+        } else {
+          // If invalid option, ask again
+          twiml.message(t.askModifyAction);
+        }
+        return res.type("text/xml").send(twiml.toString());
+
+      case "modifying_product_name":
+        const newName = msg;
+        const updatedNameProduct = await Product.findByIdAndUpdate(
+          user.currentProductId,
+          { name: newName },
+          { new: true },
+        );
+        user.state = "main_menu";
+        user.currentProductId = null; // Clear the stored ID
+        await user.save();
+
+        let nameMainMenu = t.mainMenu;
+        if (user.isPro) nameMainMenu += "\n8. Pro Features 💎";
+        const nameFeedback = updatedNameProduct
+          ? `✅ Name updated to: *${newName}*`
+          : t.productNotFound;
+        twiml.message(nameFeedback + "\n" + nameMainMenu);
+        return res.type("text/xml").send(twiml.toString());
+
+      case "modifying_product_price":
+        const newPrice = Number(msg);
+        if (isNaN(newPrice) || newPrice < 0) {
+          twiml.message(t.enterValidPrice);
+          return res.type("text/xml").send(twiml.toString());
+        }
+
+        const updatedPriceProduct = await Product.findByIdAndUpdate(
+          user.currentProductId,
+          { price: newPrice },
+          { new: true },
+        );
+        user.state = "main_menu";
+        user.currentProductId = null; // Clear the stored ID
+        await user.save();
+
+        let priceMainMenu = t.mainMenu;
+        if (user.isPro) priceMainMenu += "\n8. Pro Features 💎";
+        const priceFeedback = updatedPriceProduct
+          ? `✅ Price updated to: *₦${newPrice}*`
+          : t.productNotFound;
+        twiml.message(priceFeedback + "\n" + priceMainMenu);
         return res.type("text/xml").send(twiml.toString());
 
       case "awaiting_feedback":
@@ -778,7 +912,7 @@ router.post("/", async (req, res) => {
         user.state = "main_menu";
         await user.save();
         let feedbackMainMenu = t.mainMenu;
-        if (user.isPro) feedbackMainMenu += "\n7. Pro Features 💎";
+        if (user.isPro) feedbackMainMenu += "\n8. Pro Features 💎";
 
         twiml.message(t.feedbackReceived + "\n" + feedbackMainMenu);
         return res.type("text/xml").send(twiml.toString());
@@ -817,7 +951,7 @@ router.post("/", async (req, res) => {
           ? t.pro.productFeatured
           : t.productNotFound;
         let mainMenuFeature = t.mainMenu;
-        if (user.isPro) mainMenuFeature += "\n7. Pro Features 💎";
+        if (user.isPro) mainMenuFeature += "\n8. Pro Features 💎";
         twiml.message(featureFeedback + "\n" + mainMenuFeature);
         return res.type("text/xml").send(twiml.toString());
 
@@ -844,7 +978,7 @@ router.post("/", async (req, res) => {
           ? t.pro.productUnfeatured
           : t.productNotFound;
         let mainMenuUnfeature = t.mainMenu;
-        if (user.isPro) mainMenuUnfeature += "\n7. Pro Features 💎";
+        if (user.isPro) mainMenuUnfeature += "\n8. Pro Features 💎";
         twiml.message(unfeatureFeedback + "\n" + mainMenuUnfeature);
         return res.type("text/xml").send(twiml.toString());
     }
@@ -853,7 +987,7 @@ router.post("/", async (req, res) => {
     // Make sure main menu is correct in fallback too
     if (user.state === "main_menu") {
       let fallbackMainMenu = t.mainMenu;
-      if (user.isPro) fallbackMainMenu += "\n7. Pro Features 💎";
+      if (user.isPro) fallbackMainMenu += "\n8. Pro Features 💎";
       twiml.message(fallbackMainMenu);
       return res.type("text/xml").send(twiml.toString());
     }
