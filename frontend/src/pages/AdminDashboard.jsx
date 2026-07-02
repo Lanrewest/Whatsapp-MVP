@@ -363,6 +363,15 @@ export default function AdminDashboard() {
       if (productStatusFilter === "pending") return p.isApproved === false;
       return true;
     });
+  const getFilteredProducts = () => {
+    const baseProducts = stats.products || [];
+    const filteredBySearch = baseProducts.filter(p => 
+      p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) || 
+      p.traderPhone.includes(productSearchTerm)
+    );
+    const filteredByStatus = filteredBySearch.filter(p => productStatusFilter === 'all' || (productStatusFilter === 'approved' && p.isApproved !== false) || (productStatusFilter === 'pending' && p.isApproved === false));
+    return productSearchTerm === "" ? filteredByStatus.slice(0, 5) : filteredByStatus;
+  };
 
   const exportToCSV = () => {
     const dateStr = new Date().toISOString().split('T')[0];
@@ -836,6 +845,7 @@ export default function AdminDashboard() {
 
             <div style={{ overflowX: 'auto' }}>
               {productSearchTerm === "" && filteredProducts.length > 5 ? (
+              {productSearchTerm === "" && (stats.products || []).length > 5 ? (
                 <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
                   Showing 5 most recent items. Use the search bar to find more.
                 </p>
@@ -851,6 +861,7 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody>
                   {filteredProducts.map(p => (
+                  {getFilteredProducts().map(p => (
                     <tr key={p._id} style={{ borderBottom: '1px solid #f1f1f1' }}>
                       <td style={{ padding: '12px' }}>
                         {editingProductId === p._id ? (
