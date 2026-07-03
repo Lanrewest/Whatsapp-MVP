@@ -41,12 +41,12 @@ export default function Upgrade() {
         </p>
 
         <ul style={{ lineHeight: 1.7, paddingLeft: "20px" }}>
-          <li><strong>Verified Badge</strong> — ₦2,000 one-time payment</li>
-          <li><strong>Pro Subscription</strong> — ₦2,000 monthly, 200 messages/day, and includes the badge</li>
+          <li><strong>Verified Badge</strong> — ₦2,000 monthly (50 messages/day)</li>
+          <li><strong>Pro Subscription</strong> — ₦3,000 monthly (200 messages/day + Pro Features)</li>
         </ul>
 
         <p style={{ lineHeight: 1.6 }}>
-          For the quickest way to continue, reply with <strong>6</strong> in this WhatsApp chat and choose your plan.
+          For the quickest way to continue, reply with <strong>7</strong> in this WhatsApp chat and choose your plan.
         </p>
 
         <a href="/" style={buttonStyle}>Back to Home</a>

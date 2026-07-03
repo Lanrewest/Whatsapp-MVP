@@ -49,8 +49,7 @@ const prompts = {
     // Re-ordered for better flow
     mainMenu:
       "1. Add Product\n2. Modify Product\n3. Delete Product\n4. View My Store\n5. Update Address\n6. Give Feedback\n7. Upgrade Account",
-    upgradeLimitExceeded: (upgradeLink) =>
-      `You have reached your daily message limit. Please try again tomorrow, or reply with "6" to upgrade your account for a higher limit.`,
+    upgradeLimitExceeded: `You have reached your daily message limit. Please try again tomorrow, or reply with "7" to upgrade your account for a higher limit.`,
     productNotFound: "Product not found.",
     noProducts: "You have not added any products yet.",
     askDeleteProduct:
@@ -73,8 +72,7 @@ const prompts = {
       "Select Upgrade Type:\n1. Verified Badge (₦2,000 Monthly - 50 msgs/day)\n2. Pro Subscription (₦3,000 Monthly - 200 msgs/day + Pro Features)",
     askPaymentMethod:
       "How would you like to pay for your badge?\n1. Pay Online (Instant ✅)\n2. Bank Transfer (Manual 🏦)",
-    bankDetails:
-      "Please transfer ₦2,000 to:\n\n*Bank:* Zenith Bank\n*Account:* 1234567890\n*Name:* Arewa Connect\n\nAfter payment, please send a *screenshot of the receipt* here.",
+    bankDetails: `Please transfer the required amount to:\n\n*Bank:* ${process.env.BANK_NAME || "Zenith Bank"}\n*Account:* ${process.env.BANK_ACCOUNT_NUMBER || "1234567890"}\n*Name:* ${process.env.BANK_ACCOUNT_NAME || "Arewa Connect"}\n\nAfter payment, please send a *screenshot of the receipt* here.`,
     receiptReceived:
       "🙏 Thank you! Your receipt has been received. Our team will verify it and update your badge shortly.",
     sendReceiptOnly: "Please send a photo/screenshot of your payment receipt.",
@@ -137,8 +135,7 @@ const prompts = {
     // Re-ordered for better flow
     mainMenu:
       "1. Ƙara Kaya\n2. Gyara Kaya\n3. Goge Kaya\n4. Duba Shagona\n5. Gyara Adireshi\n6. Ba da Rahoto/Shawara\n7. Haɓaka Asusu",
-    upgradeLimitExceeded: (upgradeLink) =>
-      `Kuyi hakuri, kun kai iyakacin saƙonni na yau. Da fatan za a sake gwadawa gobe, ko ku amsa da "6" don haɓaka asusun ku.`,
+    upgradeLimitExceeded: `Kuyi hakuri, kun kai iyakacin saƙonni na yau. Da fatan za a sake gwadawa gobe, ko ku amsa da "7" don haɓaka asusun ku.`,
     productNotFound: "Ba a sami kaya ba.",
     noProducts: "Baku ƙara kowane kaya ba tukuna.",
     askDeleteProduct: "Amsa da lambar kayan da kake son gogewa:",
@@ -158,8 +155,7 @@ const prompts = {
       "Zaɓi nau'in haɓakawa:\n1. Verified Badge (₦2,000 Duk wata - Sakonni 50)\n2. Pro Subscription (₦3,000 Duk wata - Sakonni 200 + Ayyukan Pro)",
     askPaymentMethod:
       "Yaya kake son biya?\n1. Biya ta Online (Nan take ✅)\n2. Canja wurin kudi ta Banki (Manual 🏦)",
-    bankDetails:
-      "Da fatan za a tura ₦2,000 zuwa:\n\n*Bank:* Zenith Bank\n*Account:* 1234567890\n*Sunan:* Arewa Connect\n\nBayan kayi biya, turo hoton shaidar biyan ka (receipt) a nan.",
+    bankDetails: `Da fatan za a tura kudin da ake bukata zuwa:\n\n*Bank:* ${process.env.BANK_NAME || "Zenith Bank"}\n*Account:* ${process.env.BANK_ACCOUNT_NUMBER || "1234567890"}\n*Sunan:* ${process.env.BANK_ACCOUNT_NAME || "Arewa Connect"}\n\nBayan kayi biya, turo hoton shaidar biyan ka (receipt) a nan.`,
     receiptReceived:
       "🙏 Mun gode! Mun karbi hoton shaidar biyan ku. Za mu duba sannan mu inganta asusun ku nan ba da jimawa ba.",
     sendReceiptOnly: "Da fatan za a turo hoton shaidar biyan ku.",
@@ -257,15 +253,16 @@ router.post("/", async (req, res) => {
             ? "Biyan kuɗin ku na 'Pro' ya ƙare. An mayar da ku asusun 'Verified'. 💎"
             : "Your Pro subscription has expired. You have been rolled back to a Verified account. 💎";
         twiml.message(expiredMsg);
-      } else if (daysRemaining <= 3 && !user.expiryNotified) {
-        // Notify 3 days before expiration (one-time flag)
-        const warningMsg =
-          user.language === "ha"
-            ? `Sauran kwanaki ${daysRemaining} biyan kuɗin ku na Pro ya ƙare. Ku sabunta don ci gaba da amfani da damar 200 messages.`
-            : `Your Pro subscription expires in ${daysRemaining} days. Renew now to keep your 200 messages/day limit!`;
-        twiml.message(warningMsg);
-        user.expiryNotified = true; // You'd need to add this field to the model too
-        await user.save();
+        // } else if (daysRemaining <= 3 && !user.expiryNotified) {
+        //   // This feature is ready, but requires adding `expiryNotified: Boolean` to the User model.
+        //   // Notify 3 days before expiration (one-time flag)
+        //   const warningMsg =
+        //     user.language === "ha"
+        //       ? `Sauran kwanaki ${daysRemaining} biyan kuɗin ku na Pro ya ƙare. Ku sabunta don ci gaba da amfani da damar 200 messages.`
+        //       : `Your Pro subscription expires in ${daysRemaining} days. Renew now to keep your 200 messages/day limit!`;
+        //   twiml.message(warningMsg);
+        //   user.expiryNotified = true;
+        //   await user.save();
       }
     }
 
@@ -276,19 +273,19 @@ router.post("/", async (req, res) => {
     t.pro = prompts.pro[lang];
 
     // 1. Unified Greeting & Reset Logic
-    const isGreeting = /^(hi|start|market)/i.test(msg);
-    const isJoinMessage = /^join/i.test(msg);
+    const isGreeting = /^(hi|start|market|join|get started)/i.test(msg);
 
-    if (isGreeting || isJoinMessage) {
+    if (isGreeting) {
       console.log(
         `👋 Greeting from ${user.phone}. Setting state to awaiting_language.`,
       );
       user.dailyUsageCount++; // Count the interaction
-      if (user.companyName && !isJoinMessage) {
+      if (user.companyName) {
+        // If user is already registered
         user.state = "main_menu";
         await user.save();
         let mainMenu = t.mainMenu;
-        if (user.isPro) mainMenu += "\n7. Pro Features 💎";
+        if (user.isPro) mainMenu += "\n8. Pro Features 💎";
         twiml.message(`${t.welcomeBack(user.companyName)}\n${mainMenu}`);
         console.log(`✅ Response sent: Welcome back to ${user.phone}`);
         return res.type("text/xml").send(twiml.toString());
@@ -319,7 +316,7 @@ router.post("/", async (req, res) => {
     ).replace(/\/$/, "");
     const upgradeLink = `${frontendBaseUrl}/upgrade`;
     const isPartOfUpgradeFlow =
-      msg === "6" ||
+      msg === "7" || // Corrected from 6 to 7
       user.state === "verification_choice" ||
       user.state === "payment_method_choice";
 
@@ -332,8 +329,8 @@ router.post("/", async (req, res) => {
       // It sends a consistent message and then stops, preventing silent "OK" responses.
       const limitMsg =
         user.language === "ha"
-          ? prompts.ha.upgradeLimitExceeded(upgradeLink)
-          : prompts.en.upgradeLimitExceeded(upgradeLink);
+          ? prompts.ha.upgradeLimitExceeded
+          : prompts.en.upgradeLimitExceeded;
       twiml.message(limitMsg);
       return res.type("text/xml").send(twiml.toString());
     }
@@ -372,7 +369,7 @@ router.post("/", async (req, res) => {
           user.companyName
             ? `${prompts[user.language].welcomeBack(user.companyName)}\n${
                 prompts[user.language].mainMenu
-              }${user.isPro ? "\n7. Pro Features 💎" : ""}`
+              }${user.isPro ? "\n8. Pro Features 💎" : ""}`
             : prompts[user.language].askCompany,
         );
         console.log(`✅ Response generated for ${user.phone}: ${user.state}`);
@@ -384,7 +381,7 @@ router.post("/", async (req, res) => {
           user.state = "main_menu";
           await user.save();
           let mainMenu = t.mainMenu;
-          if (user.isPro) mainMenu += "\n7. Pro Features 💎";
+          if (user.isPro) mainMenu += "\n8. Pro Features 💎";
 
           twiml.message(t.welcomeBack(user.companyName) + "\n" + mainMenu);
           return res.type("text/xml").send(twiml.toString());
@@ -422,7 +419,7 @@ router.post("/", async (req, res) => {
           user.state = "main_menu";
           await user.save();
           let mainMenu = t.mainMenu;
-          if (user.isPro) mainMenu += "\n7. Pro Features 💎";
+          if (user.isPro) mainMenu += "\n8. Pro Features 💎";
 
           twiml.message(t.registrationComplete + "\n" + mainMenu);
         } else {
@@ -438,7 +435,7 @@ router.post("/", async (req, res) => {
         user.state = "main_menu";
         await user.save();
         let mainMenu = t.mainMenu;
-        if (user.isPro) mainMenu += "\n7. Pro Features 💎";
+        if (user.isPro) mainMenu += "\n8. Pro Features 💎";
 
         twiml.message(t.registrationComplete + "\n" + mainMenu);
         return res.type("text/xml").send(twiml.toString());
@@ -534,7 +531,7 @@ router.post("/", async (req, res) => {
           return res.type("text/xml").send(twiml.toString());
         }
         if (msg === "1") {
-          // Set Banner - This was the bug. It should go to pro_setting_banner directly.
+          // Set Banner
           user.state = "pro_setting_banner";
           await user.save();
           twiml.message(t.pro.askBannerImage);
@@ -797,7 +794,7 @@ router.post("/", async (req, res) => {
         user.currentProduct = { name: "", price: 0 };
         await user.save();
         let postAddMainMenu = t.mainMenu;
-        if (user.isPro) postAddMainMenu += "\n7. Pro Features 💎";
+        if (user.isPro) postAddMainMenu += "\n8. Pro Features 💎";
 
         twiml.message("✅ Product added!\n\n" + postAddMainMenu);
         return res.type("text/xml").send(twiml.toString());

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Logo from "../Logo";
 
 export default function ContactUs() {
-  const WHATSAPP_NUMBER = "2348071821807"; // Updated to the new number
+  const WHATSAPP_NUMBER = process.env.REACT_APP_TWILIO_NUMBER || "2348071821807";
 
   return (
     <div style={{ padding: "40px 5%", maxWidth: "800px", margin: "0 auto", fontFamily: "sans-serif", color: "#333", textAlign: "center" }}>

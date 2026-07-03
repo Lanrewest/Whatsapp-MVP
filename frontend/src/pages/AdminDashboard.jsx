@@ -14,7 +14,6 @@ export default function AdminDashboard() {
     hourlyData: [],
     feedback: [],
     products: [],
-    filteredProducts: [], // New state to hold filtered products
     daily: {
       traders: [],
       products: [],
@@ -102,15 +101,6 @@ export default function AdminDashboard() {
       fetchStats(); 
     }
   }, [isAuthorized]);
-
-  // ✅ FIXED: Now watches search term and product data
-  useEffect(() => {
-    if (stats.products && stats.products.length > 0) {
-      const lowercasedSearchTerm = productSearchTerm.toLowerCase();
-      const filtered = stats.products.filter(p => p.name.toLowerCase().includes(lowercasedSearchTerm) || p.traderPhone.includes(lowercasedSearchTerm));
-      setStats(prevStats => ({ ...prevStats, filteredProducts: filtered }));
-    }
-  }, [productSearchTerm, stats.products]); // Dependency array fixed
 
   const updateTier = async (userId, tier) => {
     try {
@@ -356,13 +346,6 @@ export default function AdminDashboard() {
     return matchesSearch && matchesStatus;
   });
 
-  const filteredProducts = (productSearchTerm === "" ? (stats.products || []).slice(0, 5) : (stats.filteredProducts || []))
-    .filter((p) => {
-      if (productStatusFilter === "all") return true;
-      if (productStatusFilter === "approved") return p.isApproved !== false;
-      if (productStatusFilter === "pending") return p.isApproved === false;
-      return true;
-    });
   const getFilteredProducts = () => {
     const baseProducts = stats.products || [];
     const filteredBySearch = baseProducts.filter(p => 
@@ -446,15 +429,15 @@ export default function AdminDashboard() {
       <div className="stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         <StatCard label="Total Traders" value={stats.totalUsers} />
         <StatCard label="Total Products" value={stats.totalProducts} />
-        <StatCard label="Landing Page" value={stats.todayLanding || 0} subValue={`Total: ${stats.landingVisits}`} />
-        <StatCard label="Store Views" value={stats.todayStore || 0} subValue={`Total: ${stats.storeVisits}`} />
+        <StatCard label="Landing Page Visits" value={stats.landingVisits} subValue={`Today: ${stats.todayLanding || 0}`} />
+        <StatCard label="Store Views" value={stats.storeVisits} subValue={`Today: ${stats.todayStore || 0}`} />
         <StatCard label="Pro / Verified" value={stats.tierStats?.pro || 0} subValue={`Verified: ${stats.tierStats?.verified || 0}`} />
       </div>
 
       {/* Daily Growth Trends */}
       <div style={collapsibleCardStyle}>
         <div style={sectionHeaderStyle} onClick={() => toggleSection('trends')}>
-          <h3 style={{ margin: 0 }}>📈 Activity Trends</h3>
+          <h3 style={{ margin: 0 }}>📈 Historical Activity Trends</h3>
           <span>{collapsed.trends ? '➕' : '➖'}</span>
         </div>
         
@@ -844,7 +827,6 @@ export default function AdminDashboard() {
             )}
 
             <div style={{ overflowX: 'auto' }}>
-              {productSearchTerm === "" && filteredProducts.length > 5 ? (
               {productSearchTerm === "" && (stats.products || []).length > 5 ? (
                 <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
                   Showing 5 most recent items. Use the search bar to find more.
@@ -860,7 +842,6 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProducts.map(p => (
                   {getFilteredProducts().map(p => (
                     <tr key={p._id} style={{ borderBottom: '1px solid #f1f1f1' }}>
                       <td style={{ padding: '12px' }}>
@@ -977,36 +958,31 @@ function StatCard({ label, value, subValue }) {
   return (
     <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
       <div style={{ fontSize: '0.9rem', color: '#666', marginBottom: '0.5rem' }}>{label}</div>
-      <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#075e54' }}>{value} <span style={{fontSize: '0.9rem', fontWeight: 'normal'}}>today</span></div>
+      <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#075e54' }}>{value.toLocaleString()}</div>
       {subValue && <div style={{ fontSize: '0.75rem', color: '#999', marginTop: '5px' }}>{subValue}</div>}
     </div>
   );
 }
 
 function TrendSection({ title, data, color }) {
-  const maxVal = Math.max(...(data || []).map(d => d.count), 5);
+  // Sort data by date to show the most recent first
+  const sortedData = (data || []).sort((a, b) => new Date(b._id) - new Date(a._id));
   
   return (
-    <div style={{ border: '1px solid #eee', padding: '10px', borderRadius: '8px' }}>
-      <h4 style={{ margin: '0 0 10px 0', fontSize: '0.8rem', color: '#666' }}>{title}</h4>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '60px' }}>
-        {(!data || data.length === 0) ? (
-          <span style={{ fontSize: '0.7rem', color: '#999' }}>No data</span>
+    <div style={{ border: '1px solid #eee', padding: '1rem', borderRadius: '8px', background: '#fcfcfc' }}>
+      <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: color, borderBottom: `2px solid ${color}`, paddingBottom: '5px' }}>{title}</h4>
+      <div style={{ maxHeight: '200px', overflowY: 'auto', fontSize: '0.85rem' }}>
+        {(!sortedData || sortedData.length === 0) ? (
+          <p style={{ color: '#999' }}>No data for this period.</p>
         ) : (
-          data.map((day, idx) => (
-            <div 
-              key={idx} 
-              title={`${new Date(day._id).toDateString()}: ${day.count}`} 
-              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'help' }}>
-              <div style={{ 
-                width: '100%', 
-                height: `${(day.count / maxVal) * 100}%`, 
-                background: color, 
-                borderRadius: '2px 2px 0 0',
-                minHeight: '2px'
-              }}></div>
-            </div>
-          ))
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {sortedData.map((day, idx) => (
+              <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
+                <span>{new Date(day._id).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                <strong style={{ color: '#333' }}>{day.count.toLocaleString()}</strong>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>
@@ -1029,29 +1005,39 @@ function EngagementGraph({ landingData, storeData }) {
   };
 
   return (
-    <div style={{ width: '100%', overflowX: 'auto' }}>
-      <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ width: '100%', height: '150px', display: 'block' }}>
-        {/* Grid lines */}
-        {[0, 0.25, 0.5, 0.75, 1].map(v => (
-          <line key={v} x1="0" y1={height * v} x2={width} y2={height * v} stroke="#eee" strokeWidth="1" />
-        ))}
-        
-        {/* Landing Data Path */}
-        <polyline
-          fill="none"
-          stroke="#075e54"
-          strokeWidth="3"
-          points={getPoints(landingData)}
-        />
-        
-        {/* Store Data Path */}
-        <polyline
-          fill="none"
-          stroke="#25d366"
-          strokeWidth="3"
-          points={getPoints(storeData)}
-        />
-      </svg>
+    <div>
+      <div style={{ width: '100%', overflowX: 'auto' }}>
+        <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ width: '100%', height: '150px', display: 'block' }}>
+          {[0, 0.25, 0.5, 0.75, 1].map(v => (
+            <line key={v} x1="0" y1={height * v} x2={width} y2={height * v} stroke="#eee" strokeWidth="1" />
+          ))}
+          <polyline fill="none" stroke="#075e54" strokeWidth="3" points={getPoints(landingData)} />
+          <polyline fill="none" stroke="#25d366" strokeWidth="3" points={getPoints(storeData)} />
+        </svg>
+      </div>
+      <div style={{ maxHeight: '250px', overflowY: 'auto', marginTop: '1rem' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+          <thead>
+            <tr style={{ textAlign: 'left', borderBottom: '2px solid #ddd' }}>
+              <th style={{ padding: '8px' }}>Date</th>
+              <th style={{ padding: '8px' }}>Landing Visits</th>
+              <th style={{ padding: '8px' }}>Store Views</th>
+            </tr>
+          </thead>
+          <tbody>
+            {landingData.map((ld, i) => {
+              const sd = storeData.find(s => s._id === ld._id) || { count: 0 };
+              return (
+                <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '8px' }}>{new Date(ld._id).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })}</td>
+                  <td style={{ padding: '8px', fontWeight: 'bold' }}>{ld.count}</td>
+                  <td style={{ padding: '8px', fontWeight: 'bold' }}>{sd.count}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

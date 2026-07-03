@@ -120,7 +120,7 @@ const styles = {
 
 export default function LandingPage() {
   // Replace with your actual Twilio WhatsApp Number (e.g., +234...)
-  const WHATSAPP_LINK = `https://wa.me/${process.env.REACT_APP_TWILIO_NUMBER || "14155238886"}?text=Join%20themselves-game`;
+  const WHATSAPP_LINK = `https://wa.me/${process.env.REACT_APP_TWILIO_NUMBER || "2348071821807"}?text=Join`;
 
   useEffect(() => {
     document.title = "Arewa Connect | Digital Storefronts for Northern Traders";
@@ -230,7 +230,7 @@ export default function LandingPage() {
           <Link to="/contact-us" style={{ color: "#666", textDecoration: "none" }}>Contact Us</Link>
         </div>
         <div style={{ marginTop: 20, fontSize: "0.8rem", color: "#bbb" }}>
-          Example Store: <code>/store/08012345678</code>
+          Example Store: <code>/store/arewaconnect</code>
         </div>
       </footer>
     </div>

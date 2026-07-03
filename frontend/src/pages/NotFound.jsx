@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Logo from "../Logo";
+import notFoundIllustration from "./404-error.svg"; // Import the local SVG
 
 export default function NotFound() {
   return (
@@ -8,9 +9,9 @@ export default function NotFound() {
       <Logo width="300" height="60" />
       <div style={{ marginTop: '2rem' }}>
         <img 
-          src="https://www.svgrepo.com/show/426192/404-error.svg" 
+          src={notFoundIllustration} 
           alt="Not Found Illustration" 
-          style={{ width: '100%', maxWidth: '250px', opacity: 0.8 }} 
+          style={{ width: '100%', maxWidth: '180px', opacity: 0.8 }} 
         />
       </div>
       <h1 style={styles.title}>404</h1>
