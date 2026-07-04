@@ -100,7 +100,7 @@ export default function AdminDashboard() {
       document.title = "Admin Dashboard | Arewa Connect";
       fetchStats(); 
     }
-  }, [isAuthorized]);
+  }, [isAuthorized, trendRange]);
 
   const updateTier = async (userId, tier) => {
     try {
@@ -871,7 +871,9 @@ export default function AdminDashboard() {
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               {p.imageUrl || (p.imageUrls && p.imageUrls.length > 0) ? (
-                                <img src={p.imageUrls && p.imageUrls.length > 0 ? p.imageUrls[0] : p.imageUrl} alt="" style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />
+                                <img src={p.imageUrls && p.imageUrls.length > 0 ? p.imageUrls[0] : p.imageUrl} alt="" style={{ 
+                                  width: '40px', height: '40px', borderRadius: '6px', objectFit: 'contain', background: '#f0f0f0' 
+                                }} />
                               ) : (
                                 <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: '#aaa' }}>No Image</div>
                               )}

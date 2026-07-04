@@ -19,6 +19,7 @@ export default function Store() {
   const [loading, setLoading] = useState(true); // Added loading state
   const [fetchError, setFetchError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [zoomedImage, setZoomedImage] = useState(null);
 
   const [showFeedback, setShowFeedback] = useState(false);
   const [rating, setRating] = useState(5);
@@ -217,12 +218,20 @@ export default function Store() {
                       border: p.isFeatured ? '2px solid #ffc107' : '1px solid #ececec',
                     }}>
                     {imageList[0] && (
-                      <img src={imageList[0]} alt={p.name} style={{ width: '100%', height: 176, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
+                      <img 
+                        src={imageList[0]} 
+                        alt={p.name} 
+                        style={{ width: '100%', height: 176, objectFit: 'contain', borderRadius: 8, marginBottom: 8, background: '#f0f0f0', cursor: 'zoom-in' }} 
+                        onClick={() => setZoomedImage(imageList[0])}
+                      />
                     )}
                     {imageList.length > 1 && (
                       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 10 }}>
                         {imageList.map((img, index) => (
-                          <img key={`${p._id}-${index}`} src={img} alt={`${p.name} ${index + 1}`} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 6, border: '1px solid #ddd' }} />
+                          <img key={`${p._id}-${index}`} src={img} alt={`${p.name} ${index + 1}`} style={{ 
+                            width: 50, height: 50, objectFit: 'contain', borderRadius: 6, border: '1px solid #ddd', background: '#f0f0f0', cursor: 'pointer' 
+                          }}
+                          onClick={() => setZoomedImage(img)} />
                         ))}
                       </div>
                     )}
@@ -338,7 +347,11 @@ export default function Store() {
               <img 
                 src={selectedProduct.imageUrl} 
                 alt={selectedProduct.name} 
-                style={{ width: '100%', maxHeight: '250px', objectFit: 'cover', borderRadius: '12px', marginBottom: '16px' }} 
+              style={{ 
+                width: '100%', maxHeight: '250px', objectFit: 'contain', borderRadius: '12px', marginBottom: '16px', 
+                background: '#f0f0f0', cursor: 'zoom-in'
+              }}
+              onClick={() => setZoomedImage(selectedProduct.imageUrl)}
               />
             )}
             <div style={{ marginBottom: '20px', textAlign: 'left' }}>
@@ -353,6 +366,33 @@ export default function Store() {
               <button onClick={() => handleBuyNow(selectedProduct)} style={{ ...btnAdd, background: '#25d366' }}>Buy Now</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Image Zoom Lightbox Modal */}
+      {zoomedImage && (
+        <div 
+          style={{
+            position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+            background: 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', zIndex: 2000, cursor: 'zoom-out'
+          }}
+          onClick={() => setZoomedImage(null)}
+        >
+          <img 
+            src={zoomedImage} 
+            alt="Zoomed product" 
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
+              objectFit: 'contain',
+              boxShadow: '0 0 30px rgba(0,0,0,0.5)',
+              borderRadius: '8px'
+            }}
+          />
+          <span style={{ position: 'absolute', top: '15px', right: '35px', color: '#fff', fontSize: '3rem', fontWeight: 'bold' }}>
+            &times;
+          </span>
         </div>
       )}
     </div>
