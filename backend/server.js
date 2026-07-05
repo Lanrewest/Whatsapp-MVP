@@ -67,6 +67,7 @@ app.use(
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(
   bodyParser.json({
+    limit: "50mb", // Increase the limit to allow for image data
     verify: (req, res, buf) => {
       req.rawBody = buf;
     },

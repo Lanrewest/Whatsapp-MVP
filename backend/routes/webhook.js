@@ -603,63 +603,63 @@ router.post("/", async (req, res) => {
         }
 
       case "adding_image":
-        let imageUrl = "";
-        if (msg.toUpperCase() === "SKIP") {
-          imageUrl = "";
-        } else if (mediaUrl) {
-          // Upload the image from Twilio's temporary URL to Cloudinary
+        // Initialize imageUrls array if it doesn't exist
+        if (!user.currentProduct.imageUrls) {
+          user.currentProduct.imageUrls = [];
+        }
+
+        if (mediaUrl) {
+          // User sent an image
           try {
-            // Twilio media URLs are protected. We inject credentials via Basic Auth
-            // so Cloudinary has permission to download the file.
             const authenticatedMediaUrl = mediaUrl.replace(
               "https://api.twilio.com",
               `https://${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}@api.twilio.com`,
             );
-
-            console.log(
-              `Attempting Cloudinary upload using SID: ${process.env.TWILIO_ACCOUNT_SID ? process.env.TWILIO_ACCOUNT_SID.substring(0, 5) : "MISSING"}...`,
-            );
-
             const uploadResult = await cloudinary.uploader.upload(
               authenticatedMediaUrl,
-              {
-                folder: "arewaconnect_products", // Optional: organize uploads in a specific folder
-                // You can add other Cloudinary options here, like public_id, transformations, etc.
-              },
+              { folder: "arewaconnect_products" },
             );
-            imageUrl = uploadResult.secure_url; // Get the permanent secure URL
-            console.log("Image uploaded to Cloudinary successfully:", imageUrl);
-          } catch (uploadError) {
-            console.error(
-              "Cloudinary upload failed:",
-              uploadError.message || uploadError,
-            ); // Log only the message
-            // Inform the user if image upload fails, and keep them in the same state to retry or skip
+            user.currentProduct.imageUrls.push(uploadResult.secure_url);
+            await user.save();
             twiml.message(
-              t.sendImageOrSkip +
-                " (Image upload failed. Please try again or type SKIP)",
+              "Image added. Send another image for a different color/style, or reply with 'DONE' to finish.",
             );
-            return res.type("text/xml").send(twiml.toString());
+          } catch (uploadError) {
+            console.error("Cloudinary upload failed:", uploadError.message);
+            twiml.message(
+              "Image upload failed. Please try again, or reply with 'DONE' to finish.",
+            );
           }
-        } else {
-          twiml.message(t.sendImageOrSkip);
           return res.type("text/xml").send(twiml.toString());
         }
 
-        await Product.create({
-          traderSlug: user.slug, // Save the trader's slug with the product
-          traderPhone: phoneDigits, // Use normalized digits
-          name: user.currentProduct.name,
-          price: user.currentProduct.price,
-          imageUrl,
-        });
-        user.state = "main_menu";
-        user.currentProduct = { name: "", price: 0 };
-        await user.save();
-        let postAddMainMenu = t.mainMenu;
-        if (user.isPro) postAddMainMenu += "\n8. Pro Features 💎";
+        // If the message is not an image, check for commands
+        if (
+          msg.toUpperCase() === "DONE" ||
+          msg.toUpperCase() === "SKIP" ||
+          user.currentProduct.imageUrls.length > 0
+        ) {
+          // Finish product creation
+          await Product.create({
+            traderSlug: user.slug,
+            traderPhone: phoneDigits,
+            name: user.currentProduct.name,
+            price: user.currentProduct.price,
+            // Use the first image as the main one, and the array for all variations
+            imageUrl: user.currentProduct.imageUrls[0] || "",
+            imageUrls: user.currentProduct.imageUrls,
+          });
+          user.state = "main_menu";
+          user.currentProduct = { name: "", price: 0, imageUrls: [] }; // Reset for next time
+          await user.save();
+          let postAddMainMenu = t.mainMenu;
+          if (user.isPro) postAddMainMenu += "\n8. Pro Features 💎";
 
-        twiml.message("✅ Product added!\n\n" + postAddMainMenu);
+          twiml.message("✅ Product added!\n\n" + postAddMainMenu);
+        } else {
+          // If no images have been added and they didn't send an image or SKIP/DONE
+          twiml.message(t.sendImageOrSkip);
+        }
         return res.type("text/xml").send(twiml.toString());
 
       case "updating_address":

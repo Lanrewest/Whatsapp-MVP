@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import Logo from "../Logo";
 import LoadingSpinner from "../LoadingSpinner";
+import { optimizeCloudinaryUrl } from "../utils";
 
 export default function Store() {
   // Capture both possible names to match Router definitions like :slug or :phone
@@ -24,6 +26,7 @@ export default function Store() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [rating, setRating] = useState(5);
   const [feedbackComment, setFeedbackComment] = useState("");
+
 
   const addToCart = (product) => {
     setCart(prev => {
@@ -204,59 +207,7 @@ export default function Store() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14, alignItems: 'stretch' }}>
               {products.map(p => {
-                const imageList = p.imageUrls && p.imageUrls.length > 0
-                  ? p.imageUrls
-                  : p.imageUrl
-                    ? [p.imageUrl]
-                    : [];
-
-                return (
-                  <div key={p._id} style={{ 
-                      ...storeCardStyle, 
-                      width: '100%', 
-                      boxSizing: 'border-box',
-                      border: p.isFeatured ? '2px solid #ffc107' : '1px solid #ececec',
-                    }}>
-                    {imageList[0] && (
-                      <img 
-                        src={imageList[0]} 
-                        alt={p.name} 
-                        style={{ width: '100%', height: 176, objectFit: 'contain', borderRadius: 8, marginBottom: 8, background: '#f0f0f0', cursor: 'zoom-in' }} 
-                        onClick={() => setZoomedImage(imageList[0])}
-                      />
-                    )}
-                    {imageList.length > 1 && (
-                      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 10 }}>
-                        {imageList.map((img, index) => (
-                          <img key={`${p._id}-${index}`} src={img} alt={`${p.name} ${index + 1}`} style={{ 
-                            width: 50, height: 50, objectFit: 'contain', borderRadius: 6, border: '1px solid #ddd', background: '#f0f0f0', cursor: 'pointer' 
-                          }}
-                          onClick={() => setZoomedImage(img)} />
-                        ))}
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <h3 style={{ margin: '0 0 4px', color: '#075e54', fontSize: '0.95rem', lineHeight: 1.3 }}>
-                        {p.isFeatured && <span title="Featured Product" style={{ marginRight: '4px' }}>⭐</span>}
-                        {p.name}
-                      </h3>
-                      <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>₦{Number(p.price || 0).toLocaleString()}</span>
-                    </div>
-                    {p.description && <p style={{ margin: '6px 0', color: '#666', fontSize: '0.9rem', minHeight: 38 }}>{p.description}</p>}
-                    <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-                      <button onClick={() => setSelectedProduct(p)} style={btnDetails}>Details</button>
-                      {cart[p._id] ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <button onClick={() => removeFromCart(p._id)} style={btnSmall}>-</button>
-                          <span>{cart[p._id].qty}</span>
-                          <button onClick={() => addToCart(p)} style={btnSmall}>+</button>
-                        </div>
-                      ) : (
-                        <button onClick={() => addToCart(p)} style={btnAdd}>Add</button>
-                      )}
-                    </div>
-                  </div>
-                );
+                return <ProductCard key={p._id} product={p} onAddToCart={addToCart} onRemoveFromCart={removeFromCart} onShowDetails={setSelectedProduct} cartQty={cart[p._id]?.qty || 0} />;
               })}
             </div>
           )}
@@ -399,6 +350,108 @@ export default function Store() {
   );
 }
 
+// A new component for the product card to manage its own state
+function ProductCard({ product, onAddToCart, onRemoveFromCart, onShowDetails, cartQty }) {
+  const imageList = product.imageUrls && product.imageUrls.length > 0
+    ? product.imageUrls
+    : product.imageUrl
+      ? [product.imageUrl]
+      : [];
+
+  const [selectedImage, setSelectedImage] = useState(imageList[0] || "");
+  const [zoomedImage, setZoomedImage] = useState(null);
+
+  useEffect(() => {
+    // Reset selected image if product changes
+    setSelectedImage(imageList[0] || "");
+  }, [product]);
+
+  const handleThumbnailClick = (img) => {
+    setSelectedImage(img);
+  };
+
+  return (
+    <>
+      <div style={{ 
+          ...storeCardStyle, 
+          width: '100%', 
+          boxSizing: 'border-box',
+          border: product.isFeatured ? '2px solid #ffc107' : '1px solid #ececec',
+        }}>
+        {selectedImage && (
+          <motion.div
+            key={selectedImage}
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <img 
+              src={optimizeCloudinaryUrl(selectedImage, { width: 400 })} 
+              alt={product.name} 
+              style={{ width: '100%', height: 176, objectFit: 'contain', borderRadius: 8, marginBottom: 8, background: '#f0f0f0', cursor: 'zoom-in' }} 
+              onClick={() => setZoomedImage(selectedImage)}
+            />
+          </motion.div>
+        )}
+        {imageList.length > 1 && (
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 10, paddingBottom: '5px' }}>
+            {imageList.map((img, index) => (
+              <img 
+                key={`${product._id}-${index}`} 
+                src={optimizeCloudinaryUrl(img, { width: 100 })} 
+                alt={`${product.name} variation ${index + 1}`} 
+                style={{ 
+                  width: 50, height: 50, objectFit: 'contain', borderRadius: 6, 
+                  border: selectedImage === img ? '2px solid #075e54' : '1px solid #ddd', 
+                  background: '#f0f0f0', cursor: 'pointer', flexShrink: 0
+                }}
+                onClick={() => handleThumbnailClick(img)} 
+              />
+            ))}
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <h3 style={{ margin: '0 0 4px', color: '#075e54', fontSize: '0.95rem', lineHeight: 1.3 }}>
+            {product.isFeatured && <span title="Featured Product" style={{ marginRight: '4px' }}>⭐</span>}
+            {product.name}
+          </h3>
+          <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>₦{Number(product.price || 0).toLocaleString()}</span>
+        </div>
+        {product.description && <p style={{ margin: '6px 0', color: '#666', fontSize: '0.9rem', minHeight: 38 }}>{product.description}</p>}
+        <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
+          <button onClick={() => onShowDetails(product)} style={btnDetails}>Details</button>
+          {cartQty > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button onClick={() => onRemoveFromCart(product._id)} style={btnSmall}>-</button>
+              <span>{cartQty}</span>
+              <button onClick={() => onAddToCart(product)} style={btnSmall}>+</button>
+            </div>
+          ) : (
+            <button onClick={() => onAddToCart(product)} style={btnAdd}>Add</button>
+          )}
+        </div>
+      </div>
+
+      {/* Re-using the zoom modal from the parent, but triggered locally */}
+      <AnimatePresence>
+        {zoomedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, cursor: 'zoom-out' }}
+            onClick={() => setZoomedImage(null)}
+          >
+            <motion.img src={zoomedImage} alt="Zoomed product" style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', boxShadow: '0 0 30px rgba(0,0,0,0.5)', borderRadius: '8px' }} />
+            <span style={{ position: 'absolute', top: '15px', right: '35px', color: '#fff', fontSize: '3rem', fontWeight: 'bold' }}>&times;</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
+
+// Shared Styles
 const storeCardStyle = {
   background: '#fff',
   borderRadius: 10,
@@ -451,27 +504,13 @@ const btnClose = {
 };
 
 const modalOverlay = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  background: 'rgba(0,0,0,0.7)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 2000,
-  padding: '20px'
+  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+  background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center',
+  justifyContent: 'center', zIndex: 2000, padding: '20px'
 };
 
 const modalContent = {
-  background: '#fff',
-  borderRadius: '16px',
-  padding: '24px',
-  maxWidth: '450px',
-  width: '100%',
-  position: 'relative',
-  maxHeight: '90vh',
-  overflowY: 'auto',
-  textAlign: 'center'
+  background: '#fff', borderRadius: '16px', padding: '24px',
+  maxWidth: '450px', width: '100%', position: 'relative',
+  maxHeight: '90vh', overflowY: 'auto', textAlign: 'center'
 };

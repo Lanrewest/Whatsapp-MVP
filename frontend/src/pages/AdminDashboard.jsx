@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Logo from "../Logo";
 import LoadingSpinner from "../LoadingSpinner";
+import { optimizeCloudinaryUrl } from "../utils";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -228,7 +229,8 @@ export default function AdminDashboard() {
     setProductDraft({
       name: product.name || "",
       price: product.price || "",
-      imageUrl: product.imageUrl || ""
+      imageUrl: product.imageUrl || "",
+      imageUrls: product.imageUrls || (product.imageUrl ? [product.imageUrl] : [])
     });
   };
 
@@ -237,9 +239,22 @@ export default function AdminDashboard() {
     setProductDraft({ name: "", price: "", imageUrl: "", imageUrls: [] });
   };
 
+  const removeProductImage = (urlToRemove) => {
+    const formSetter = editingProductId ? setProductDraft : setNewProductForm;
+    formSetter(prev => ({
+      ...prev,
+      imageUrls: prev.imageUrls.filter(url => url !== urlToRemove)
+    }));
+  };
   const uploadProductImages = async (event) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
+
+    const currentImages = editingProductId ? productDraft.imageUrls : newProductForm.imageUrls;
+    if ((currentImages.length + files.length) > 3) {
+      alert("You can upload a maximum of 3 images per product.");
+      return;
+    }
 
     try {
       setIsUploadingImage(true);
@@ -266,8 +281,8 @@ export default function AdminDashboard() {
       const formSetter = editingProductId ? setProductDraft : setNewProductForm;
       formSetter(prev => ({
         ...prev,
-        imageUrls: data.urls,
-        imageUrl: data.urls[0] || prev.imageUrl
+        imageUrls: [...prev.imageUrls, ...data.urls].slice(0, 3), // Append and enforce limit
+        imageUrl: prev.imageUrl || data.urls[0] || "" // Keep existing main image if present
       }));
     } catch (err) {
       console.error(err);
@@ -321,6 +336,7 @@ export default function AdminDashboard() {
           name: productDraft.name,
           price: updatedPrice,
           imageUrl: productDraft.imageUrl,
+          imageUrl: productDraft.imageUrls[0] || "", // Ensure the main image is the first in the array
           imageUrls: productDraft.imageUrls
         })
       });
@@ -862,8 +878,17 @@ export default function AdminDashboard() {
                             {(productDraft.imageUrls || []).length > 0 && (
                               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                 {(productDraft.imageUrls || []).map((img, idx) => (
-                                  <img key={idx} src={img} alt="Preview" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px' }} />
-                                ))}
+                                  <div key={idx} style={{ position: 'relative' }}>
+                                    <img src={optimizeCloudinaryUrl(img, { width: 120 })} alt="Preview" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px' }} />
+                                    <button 
+                                      type="button" 
+                                      onClick={() => removeProductImage(img)}
+                                      style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: '1' }}
+                                    >
+                                      &times;
+                                    </button>
+                                  </div>
+                                )) }
                               </div>
                             )}
                           </div>
@@ -871,7 +896,7 @@ export default function AdminDashboard() {
                           <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                               {p.imageUrl || (p.imageUrls && p.imageUrls.length > 0) ? (
-                                <img src={p.imageUrls && p.imageUrls.length > 0 ? p.imageUrls[0] : p.imageUrl} alt="" style={{ 
+                                <img src={optimizeCloudinaryUrl(p.imageUrls && p.imageUrls.length > 0 ? p.imageUrls[0] : p.imageUrl, { width: 80 })} alt="" style={{ 
                                   width: '40px', height: '40px', borderRadius: '6px', objectFit: 'contain', background: '#f0f0f0' 
                                 }} />
                               ) : (
