@@ -25,6 +25,33 @@ function slugify(text) {
 // Configure Cloudinary using the URL from environment variables
 cloudinary.config(); // Automatically picks up CLOUDINARY_URL from process.env
 
+// Helper function to securely download from Twilio and upload to Cloudinary
+async function uploadTwilioMediaToCloudinary(mediaUrl, cloudinaryFolder) {
+  try {
+    // 1. Download the image from Twilio using Basic Auth
+    const response = await axios.get(mediaUrl, {
+      responseType: "arraybuffer", // Important to get binary data
+      auth: {
+        username: process.env.TWILIO_ACCOUNT_SID,
+        password: process.env.TWILIO_AUTH_TOKEN,
+      },
+    });
+
+    // 2. Convert binary data to a Base64 string for Cloudinary
+    const base64Image = Buffer.from(response.data, "binary").toString("base64");
+    const dataUri = `data:${response.headers["content-type"]};base64,${base64Image}`;
+
+    // 3. Upload the data URI to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(dataUri, {
+      folder: cloudinaryFolder,
+    });
+    return uploadResult;
+  } catch (error) {
+    console.error("Error in media upload process:", error.message);
+    throw error; // Re-throw the error to be caught by the calling function
+  }
+}
+
 router.post("/", async (req, res) => {
   const twiml = new MessagingResponse();
   try {
@@ -446,13 +473,9 @@ router.post("/", async (req, res) => {
       case "pro_setting_banner":
         if (mediaUrl) {
           try {
-            const authenticatedMediaUrl = mediaUrl.replace(
-              "https://api.twilio.com",
-              `https://${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}@api.twilio.com`,
-            );
-            const uploadResult = await cloudinary.uploader.upload(
-              authenticatedMediaUrl,
-              { folder: "arewaconnect_banners" },
+            const uploadResult = await uploadTwilioMediaToCloudinary(
+              mediaUrl,
+              "arewaconnect_banners",
             );
             user.storeBannerUrl = uploadResult.secure_url;
             user.state = "main_menu";
@@ -549,13 +572,9 @@ router.post("/", async (req, res) => {
       case "awaiting_transfer_receipt":
         if (mediaUrl) {
           try {
-            const authenticatedMediaUrl = mediaUrl.replace(
-              "https://api.twilio.com",
-              `https://${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}@api.twilio.com`,
-            );
-            const uploadResult = await cloudinary.uploader.upload(
-              authenticatedMediaUrl,
-              { folder: "arewaconnect_receipts" },
+            const uploadResult = await uploadTwilioMediaToCloudinary(
+              mediaUrl,
+              "arewaconnect_receipts",
             );
             user.verificationReceiptUrl = uploadResult.secure_url;
             user.state = "main_menu";
@@ -610,19 +629,24 @@ router.post("/", async (req, res) => {
 
         if (mediaUrl) {
           // User sent an image
-          try {
-            const authenticatedMediaUrl = mediaUrl.replace(
-              "https://api.twilio.com",
-              `https://${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}@api.twilio.com`,
+          // Enforce a limit of 3 images per product
+          if (user.currentProduct.imageUrls.length >= 3) {
+            twiml.message(
+              "You have reached the maximum of 3 images. Please reply with 'DONE' to finish adding your product.",
             );
-            const uploadResult = await cloudinary.uploader.upload(
-              authenticatedMediaUrl,
-              { folder: "arewaconnect_products" },
+            return res.type("text/xml").send(twiml.toString());
+          }
+
+          try {
+            const uploadResult = await uploadTwilioMediaToCloudinary(
+              mediaUrl,
+              "arewaconnect_products",
             );
             user.currentProduct.imageUrls.push(uploadResult.secure_url);
             await user.save();
+            const remaining = 3 - user.currentProduct.imageUrls.length;
             twiml.message(
-              "Image added. Send another image for a different color/style, or reply with 'DONE' to finish.",
+              `Image added (${user.currentProduct.imageUrls.length}/3). Send another, or reply with 'DONE' to finish.`,
             );
           } catch (uploadError) {
             console.error("Cloudinary upload failed:", uploadError.message);

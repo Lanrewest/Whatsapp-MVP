@@ -13,7 +13,8 @@ const prompts = {
     companyNameTaken:
       "This company name is already taken. Please choose another one.",
     enterValidPrice: "Enter valid price:",
-    sendImageOrSkip: "Send image or type SKIP",
+    sendImageOrSkip:
+      "Send up to 3 images for your product. Or reply with 'SKIP' to add no images.",
     productAdded: "✅ Product added!\n1. Add another\n2. View store",
     viewStore: (slug) =>
       `You can view your store at:\n${process.env.FRONTEND_URL || "https://arewaconnect.com.ng"}/store/${slug}`,
@@ -99,7 +100,8 @@ const prompts = {
     companyNameTaken:
       "An riga an yi amfani da wannan sunan kamfani. Da fatan za a zaɓi wani.",
     enterValidPrice: "Shigar da sahihin farashi:",
-    sendImageOrSkip: "Aika hoto ko rubuta SKIP",
+    sendImageOrSkip:
+      "Aika hotuna har guda 3 na kayanka. Ko ka rubuta 'SKIP' idan ba kwa bukata.",
     productAdded: "✅ An ƙara kaya!\n1. Ƙara wani\n2. Duba shago",
     viewStore: (slug) =>
       `Zaku iya duba shagonku a:\n${process.env.FRONTEND_URL || "https://arewaconnect.com.ng"}/store/${slug}`,

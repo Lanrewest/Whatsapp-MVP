@@ -85,7 +85,7 @@ router.get("/stats", async (req, res) => {
       ]),
       Feedback.find({}).sort({ createdAt: -1 }).limit(50),
       User.find({}),
-      Product.find({}).sort({ createdAt: -1 }),
+      Product.find({}).sort({ createdAt: -1 }).lean(), // Use .lean() for better performance
       Promise.all([
         getDailyTrend(User, 7),
         getDailyTrend(Product, 7),
@@ -105,9 +105,22 @@ router.get("/stats", async (req, res) => {
       { basic: 0, verified: 0, pro: 0 },
     );
 
+    // Normalize product image data before sending to frontend
+    const normalizedProducts = products.map((p) => {
+      // Ensure imageUrls is an array
+      if (!Array.isArray(p.imageUrls) || p.imageUrls.length === 0) {
+        p.imageUrls = p.imageUrl ? [p.imageUrl] : [];
+      }
+      // Ensure imageUrl is the first item from imageUrls, if available
+      if (!p.imageUrl && p.imageUrls.length > 0) {
+        p.imageUrl = p.imageUrls[0];
+      }
+      return p;
+    });
+
     res.json({
       traders,
-      products,
+      products: normalizedProducts,
       totalUsers,
       totalProducts,
       feedback,
