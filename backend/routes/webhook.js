@@ -662,7 +662,7 @@ router.post("/", async (req, res) => {
         if (upperMsg === "DONE" || upperMsg === "SKIP") {
           // Finish product creation
           await Product.create({
-            traderSlug: user.slug,
+            traderSlug: user.slug, // This is the key fix
             traderPhone: phoneDigits,
             name: user.currentProduct.name,
             price: user.currentProduct.price,
