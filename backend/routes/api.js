@@ -17,13 +17,17 @@ const twilioClient = twilio(
 
 // Get products by phone or slug
 router.get("/products/:key", async (req, res) => {
-  const storeKey = req.params.key;
+  const storeIdentifier = req.params.key;
 
-  // Definitive Fix: Directly query products using the store's unique slug/key.
-  // This is the most reliable method as it avoids the fragile two-step lookup via user phone number.
   const products = await Product.find({
     $and: [
-      { traderSlug: storeKey },
+      // Find products where the traderSlug matches the URL key OR the phone matches the URL key.
+      {
+        $or: [
+          { traderSlug: storeIdentifier },
+          { traderPhone: storeIdentifier },
+        ],
+      },
       { $or: [{ isApproved: { $exists: false } }, { isApproved: true }] }, // Ensure product is approved
     ],
   })
