@@ -26,20 +26,12 @@ router.get("/products/:key", async (req, res) => {
     return res.json([]);
   }
 
-  // Normalize phone for lookup to ensure compatibility with older product entries
-  const phoneDigits = user.phone.replace(/\D/g, "");
+  // Simplified and corrected product lookup.
+  // We have the definitive user, so we only need to match their phone number.
   const products = await Product.find({
     $and: [
-      {
-        $or: [
-          { traderPhone: user.phone },
-          { traderPhone: `whatsapp:${user.phone}` },
-          { traderPhone: { $regex: phoneDigits } },
-        ],
-      },
-      {
-        $or: [{ isApproved: { $exists: false } }, { isApproved: true }],
-      },
+      { traderPhone: user.phone }, // Match products belonging to this specific trader
+      { $or: [{ isApproved: { $exists: false } }, { isApproved: true }] }, // Ensure product is approved
     ],
   })
     .sort({ isFeatured: -1, createdAt: -1 }) // Sort by featured status first, then by creation date
