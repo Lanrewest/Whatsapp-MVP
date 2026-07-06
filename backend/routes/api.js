@@ -44,7 +44,21 @@ router.get("/products/:key", async (req, res) => {
   })
     .sort({ isFeatured: -1, createdAt: -1 }) // Sort by featured status first, then by creation date
     .lean();
-  res.json(products);
+
+  // Normalize image data to ensure consistency for the frontend
+  const normalizedProducts = products.map((p) => {
+    // Ensure imageUrls is an array and contains imageUrl if it's missing
+    if (!Array.isArray(p.imageUrls) || p.imageUrls.length === 0) {
+      p.imageUrls = p.imageUrl ? [p.imageUrl] : [];
+    }
+    // Ensure imageUrl is set to the first image in the array if it's missing
+    if (!p.imageUrl && p.imageUrls.length > 0) {
+      p.imageUrl = p.imageUrls[0];
+    }
+    return p;
+  });
+
+  res.json(normalizedProducts);
 });
 
 // Get all products for the general store

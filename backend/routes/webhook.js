@@ -657,12 +657,9 @@ router.post("/", async (req, res) => {
           return res.type("text/xml").send(twiml.toString());
         }
 
-        // If the message is not an image, check for commands
-        if (
-          msg.toUpperCase() === "DONE" ||
-          msg.toUpperCase() === "SKIP" ||
-          user.currentProduct.imageUrls.length > 0
-        ) {
+        // Only finish product creation on explicit commands "DONE" or "SKIP"
+        const upperMsg = msg.toUpperCase();
+        if (upperMsg === "DONE" || upperMsg === "SKIP") {
           // Finish product creation
           await Product.create({
             traderSlug: user.slug,
