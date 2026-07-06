@@ -17,20 +17,19 @@ const twilioClient = twilio(
 
 // Get products by phone or slug
 router.get("/products/:key", async (req, res) => {
-  let user = await User.findOne({ phone: req.params.key });
-  if (!user) {
-    user = await User.findOne({ slug: req.params.key });
-  }
-  if (!user) {
-    console.log(`ℹ️ Product lookup failed for key: ${req.params.key}`);
-    return res.json([]);
-  }
+  const storeIdentifier = req.params.key;
 
-  // Simplified and corrected product lookup.
-  // We have the definitive user, so we only need to match their phone number.
+  // Corrected product lookup: Directly use the slug from the URL to find products.
+  // This is more reliable than a two-step lookup via the user's phone number.
   const products = await Product.find({
     $and: [
-      { traderPhone: user.phone }, // Match products belonging to this specific trader
+      // Find products where the traderSlug matches the URL key OR the phone matches the URL key.
+      {
+        $or: [
+          { traderSlug: storeIdentifier },
+          { traderPhone: storeIdentifier },
+        ],
+      },
       { $or: [{ isApproved: { $exists: false } }, { isApproved: true }] }, // Ensure product is approved
     ],
   })
