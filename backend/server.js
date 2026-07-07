@@ -8,6 +8,7 @@ const cors = require("cors");
 const twilio = require("twilio");
 const crypto = require("crypto");
 const cloudinary = require("cloudinary").v2;
+const User = require("./models/User");
 
 // Security Check: Ensure all required environment variables are loaded
 // These must be checked BEFORE importing the routes that use them (like Cloudinary)

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../Logo";
 import LoadingSpinner from "../LoadingSpinner";
+import { optimizeCloudinaryUrl } from "../utils";
 
 export default function GeneralStore() {
   const API_BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
@@ -147,7 +148,7 @@ export default function GeneralStore() {
                     <div key={product._id} style={{ ...cardStyle, width: '100%', boxSizing: 'border-box' }}>
                       {selectedImage && (
                         <img
-                          src={selectedImage}
+                          src={optimizeCloudinaryUrl(selectedImage, { width: 400 })}
                           alt={product.name}
                           style={{ width: '100%', height: 176, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }}
                         />

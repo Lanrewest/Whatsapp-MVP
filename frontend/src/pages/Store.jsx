@@ -22,6 +22,7 @@ export default function Store() {
   const [fetchError, setFetchError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [zoomedImage, setZoomedImage] = useState(null);
+  const selectedProductImage = selectedProduct?.imageUrl || selectedProduct?.imageUrls?.[0] || "";
 
   const [showFeedback, setShowFeedback] = useState(false);
   const [rating, setRating] = useState(5);
@@ -294,15 +295,15 @@ export default function Store() {
           <div style={modalContent}>
             <button onClick={() => setSelectedProduct(null)} style={btnClose}>×</button>
             <h2 style={{ color: '#075e54', marginBottom: '16px', fontSize: '1.4rem' }}>Product Details</h2>
-            {selectedProduct.imageUrl && (
+            {selectedProductImage && (
               <img 
-                src={selectedProduct.imageUrl} 
+                src={optimizeCloudinaryUrl(selectedProductImage, { width: 700 })} 
                 alt={selectedProduct.name} 
               style={{ 
                 width: '100%', maxHeight: '250px', objectFit: 'contain', borderRadius: '12px', marginBottom: '16px', 
                 background: '#f0f0f0', cursor: 'zoom-in'
               }}
-              onClick={() => setZoomedImage(selectedProduct.imageUrl)}
+              onClick={() => setZoomedImage(selectedProductImage)}
               />
             )}
             <div style={{ marginBottom: '20px', textAlign: 'left' }}>

@@ -12,7 +12,9 @@ const UserSchema = new mongoose.Schema(
     currentProduct: {
       name: String,
       price: Number,
+      imageUrls: [{ type: String }],
     },
+    currentProductId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
     isVerified: { type: Boolean, default: false },
     isPro: { type: Boolean, default: false },
     isApproved: { type: Boolean, default: true },

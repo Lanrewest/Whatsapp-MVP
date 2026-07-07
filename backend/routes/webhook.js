@@ -44,6 +44,7 @@ async function uploadTwilioMediaToCloudinary(mediaUrl, cloudinaryFolder) {
     // 3. Upload the data URI to Cloudinary
     const uploadResult = await cloudinary.uploader.upload(dataUri, {
       folder: cloudinaryFolder,
+      resource_type: "image",
     });
     return uploadResult;
   } catch (error) {
@@ -339,9 +340,7 @@ router.post("/", async (req, res) => {
           return res.type("text/xml").send(twiml.toString());
         } else if (msg === "2") {
           // Modify Product
-          const products = await Product.find({
-            traderPhone: phoneDigits,
-          }).lean();
+          const products = await Product.find({ traderSlug: user.slug }).lean();
           if (products.length === 0) {
             twiml.message(t.noProducts);
           } else {
@@ -355,9 +354,7 @@ router.post("/", async (req, res) => {
           return res.type("text/xml").send(twiml.toString());
         } else if (msg === "3") {
           // Delete Product
-          const products = await Product.find({
-            traderPhone: phoneDigits,
-          }).lean();
+          const products = await Product.find({ traderSlug: user.slug }).lean();
           if (products.length === 0) {
             twiml.message(t.noProducts);
           } else {
@@ -428,7 +425,8 @@ router.post("/", async (req, res) => {
         } else if (msg === "2") {
           // Feature Product
           const products = await Product.find({
-            traderPhone: phoneDigits,
+            // Use slug for reliable lookup
+            traderSlug: user.slug,
             isFeatured: { $ne: true },
           }).lean();
           if (products.length === 0) {
@@ -448,7 +446,7 @@ router.post("/", async (req, res) => {
         } else if (msg === "3") {
           // Un-feature Product
           const featuredProducts = await Product.find({
-            traderPhone: phoneDigits,
+            traderSlug: user.slug, // Use slug for reliable lookup
             isFeatured: true,
           }).lean();
           if (featuredProducts.length === 0) {
@@ -660,15 +658,18 @@ router.post("/", async (req, res) => {
         // Only finish product creation on explicit commands "DONE" or "SKIP"
         const upperMsg = msg.toUpperCase();
         if (upperMsg === "DONE" || upperMsg === "SKIP") {
+          const savedImageUrls = Array.isArray(user.currentProduct.imageUrls)
+            ? user.currentProduct.imageUrls
+            : [];
+
           // Finish product creation
           await Product.create({
             traderSlug: user.slug, // This is the key fix
             traderPhone: phoneDigits,
             name: user.currentProduct.name,
             price: user.currentProduct.price,
-            // Use the first image as the main one, and the array for all variations
-            imageUrl: user.currentProduct.imageUrls[0] || "",
-            imageUrls: user.currentProduct.imageUrls,
+            imageUrl: savedImageUrls[0] || "",
+            imageUrls: savedImageUrls,
           });
           user.state = "main_menu";
           user.currentProduct = { name: "", price: 0, imageUrls: [] }; // Reset for next time
@@ -693,7 +694,7 @@ router.post("/", async (req, res) => {
       case "deleting_product_selection":
         const deleteIndex = parseInt(msg, 10) - 1;
         const productsToDelete = await Product.find({
-          traderPhone: phoneDigits,
+          traderSlug: user.slug,
         }).lean();
         let deletedProduct = null;
 
@@ -714,7 +715,7 @@ router.post("/", async (req, res) => {
       case "modifying_product_selection":
         const modifyIndex = parseInt(msg, 10) - 1;
         const productsToModify = await Product.find({
-          traderPhone: phoneDigits,
+          traderSlug: user.slug,
         }).lean();
 
         if (modifyIndex >= 0 && modifyIndex < productsToModify.length) {
@@ -808,7 +809,7 @@ router.post("/", async (req, res) => {
 
       case "pro_featuring_product":
         const featuredCount = await Product.countDocuments({
-          traderPhone: phoneDigits,
+          traderSlug: user.slug, // Use slug for reliable lookup
           isFeatured: true,
         });
         if (featuredCount >= 3) {
@@ -820,7 +821,7 @@ router.post("/", async (req, res) => {
 
         const productIndex = parseInt(msg, 10) - 1;
         const productsToFeature = await Product.find({
-          traderPhone: phoneDigits,
+          traderSlug: user.slug,
           isFeatured: { $ne: true },
         }).lean();
         let productToFeature = null;
@@ -847,7 +848,7 @@ router.post("/", async (req, res) => {
       case "pro_unfeaturing_product":
         const unfeatureIndex = parseInt(msg, 10) - 1;
         const featuredProducts = await Product.find({
-          traderPhone: phoneDigits,
+          traderSlug: user.slug, // Use slug for reliable lookup
           isFeatured: true,
         }).lean();
         let productToUnfeature = null;

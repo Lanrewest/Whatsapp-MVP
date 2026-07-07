@@ -73,8 +73,18 @@ router.get("/products", async (req, res) => {
           return tPhone === cleanTraderPhone;
         });
 
+        const normalizedImageUrls = Array.isArray(p.imageUrls)
+          ? p.imageUrls
+          : p.imageUrl
+            ? [p.imageUrl]
+            : [];
+
         return {
           ...p,
+          imageUrls: normalizedImageUrls,
+          imageUrl:
+            p.imageUrl ||
+            (normalizedImageUrls.length > 0 ? normalizedImageUrls[0] : ""),
           isVerified: !!(trader && trader.isVerified),
           isFeatured: !!p.isFeatured,
           isPro: !!(trader && trader.isPro),
