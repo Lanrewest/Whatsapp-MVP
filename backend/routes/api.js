@@ -62,7 +62,7 @@ router.get("/products", async (req, res) => {
     // Fetch all traders to get names and addresses for the labels
     const traders = await User.find(
       {},
-      "phone isVerified isPro companyName address isBlocked isApproved",
+      "phone isVerified isPro companyName address isBlocked isApproved storeCategories",
     );
 
     const augmentedProducts = allProds
@@ -90,6 +90,10 @@ router.get("/products", async (req, res) => {
           isPro: !!(trader && trader.isPro),
           isApproved: trader ? trader.isApproved !== false : true,
           isBlocked: !!(trader && trader.isBlocked),
+          category: p.category || "General",
+          traderCategories: Array.isArray(trader?.storeCategories)
+            ? trader.storeCategories
+            : [],
           traderName:
             trader && trader.companyName
               ? trader.companyName

@@ -39,16 +39,16 @@ export default function AdminDashboard() {
 
   const [trendRange, setTrendRange] = useState("seven"); // "seven" or "thirty"
   const [editingTraderId, setEditingTraderId] = useState(null);
-  const [traderDraft, setTraderDraft] = useState({ companyName: "", address: "", storeBannerUrl: "" });
+  const [traderDraft, setTraderDraft] = useState({ companyName: "", address: "", storeBannerUrl: "", storeCategories: [] });
   const [editingProductId, setEditingProductId] = useState(null);
-  const [productDraft, setProductDraft] = useState({ name: "", price: "", imageUrl: "", imageUrls: [] });
+  const [productDraft, setProductDraft] = useState({ name: "", price: "", category: "General", imageUrl: "", imageUrls: [] });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [traderSearchTerm, setTraderSearchTerm] = useState("");
   const [traderStatusFilter, setTraderStatusFilter] = useState("all");
   const [showNewTraderForm, setShowNewTraderForm] = useState(false);
-  const [newTraderForm, setNewTraderForm] = useState({ phone: "", companyName: "", address: "" });
+  const [newTraderForm, setNewTraderForm] = useState({ phone: "", companyName: "", address: "", storeCategories: [] });
   const [showNewProductForm, setShowNewProductForm] = useState(false);
-  const [newProductForm, setNewProductForm] = useState({ name: "", price: "", traderPhone: "", imageUrl: "", imageUrls: [] });
+  const [newProductForm, setNewProductForm] = useState({ name: "", price: "", traderPhone: "", category: "General", imageUrl: "", imageUrls: [] });
   const [productStatusFilter, setProductStatusFilter] = useState("all");
 
   // State for collapsible sections
@@ -67,6 +67,7 @@ export default function AdminDashboard() {
 
   const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL || "lanrewese1@gmail.com";
   const ADMIN_PASS = process.env.REACT_APP_ADMIN_PASSWORD || "123456Crest";
+  const PRODUCT_CATEGORY_OPTIONS = ["Fashion", "Food", "Electronics", "Beauty", "Home", "Services", "Textiles", "General"];
 
   const [productSearchTerm, setProductSearchTerm] = useState(""); // New state for product search
   const handleLogin = (e) => {
@@ -77,6 +78,15 @@ export default function AdminDashboard() {
     } else {
       alert("Invalid admin credentials");
     }
+  };
+
+  const toggleTraderCategory = (category, setter) => {
+    setter((prev) => ({
+      ...prev,
+      storeCategories: prev.storeCategories?.includes(category)
+        ? prev.storeCategories.filter((item) => item !== category)
+        : [...(prev.storeCategories || []), category],
+    }));
   };
 
   const fetchStats = async () => {
@@ -151,7 +161,7 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create trader');
       setShowNewTraderForm(false);
-      setNewTraderForm({ phone: '', companyName: '', address: '' });
+      setNewTraderForm({ phone: '', companyName: '', address: '', storeCategories: [] });
       fetchStats();
     } catch (err) {
       console.error(err);
@@ -170,7 +180,7 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create product');
       setShowNewProductForm(false);
-      setNewProductForm({ name: "", price: "", traderPhone: "", imageUrl: "", imageUrls: [] });
+      setNewProductForm({ name: "", price: "", traderPhone: "", category: "General", imageUrl: "", imageUrls: [] });
       fetchStats();
       alert('✅ Product created successfully!');
     } catch (err) {
@@ -199,13 +209,14 @@ export default function AdminDashboard() {
     setTraderDraft({
       companyName: trader.companyName || "",
       address: trader.address || "",
-      storeBannerUrl: trader.storeBannerUrl || ""
+      storeBannerUrl: trader.storeBannerUrl || "",
+      storeCategories: Array.isArray(trader.storeCategories) ? trader.storeCategories : []
     });
   };
 
   const cancelEditTrader = () => {
     setEditingTraderId(null);
-    setTraderDraft({ companyName: "", address: "" });
+    setTraderDraft({ companyName: "", address: "", storeBannerUrl: "", storeCategories: [] });
   };
 
   const saveTrader = async (traderId) => {
@@ -229,6 +240,7 @@ export default function AdminDashboard() {
     setProductDraft({
       name: product.name || "",
       price: product.price || "",
+      category: product.category || "General",
       imageUrl: product.imageUrl || "",
       imageUrls: product.imageUrls || (product.imageUrl ? [product.imageUrl] : [])
     });
@@ -236,7 +248,7 @@ export default function AdminDashboard() {
 
   const cancelEditProduct = () => {
     setEditingProductId(null);
-    setProductDraft({ name: "", price: "", imageUrl: "", imageUrls: [] });
+    setProductDraft({ name: "", price: "", category: "General", imageUrl: "", imageUrls: [] });
   };
 
   const removeProductImage = (urlToRemove) => {
@@ -335,8 +347,8 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           name: productDraft.name,
           price: updatedPrice,
-          imageUrl: productDraft.imageUrl,
-          imageUrl: productDraft.imageUrls[0] || "", // Ensure the main image is the first in the array
+          category: productDraft.category || "General",
+          imageUrl: productDraft.imageUrls[0] || "",
           imageUrls: productDraft.imageUrls
         })
       });
@@ -649,6 +661,33 @@ export default function AdminDashboard() {
                   rows="2"
                   style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
                 />
+                <div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#111827', marginBottom: '6px' }}>Store Categories</div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {PRODUCT_CATEGORY_OPTIONS.map((category) => {
+                      const selected = newTraderForm.storeCategories?.includes(category);
+                      return (
+                        <button
+                          key={category}
+                          type="button"
+                          onClick={() => toggleTraderCategory(category, setNewTraderForm)}
+                          style={{
+                            padding: '7px 10px',
+                            borderRadius: 999,
+                            border: `1px solid ${selected ? '#075e54' : '#d1d5db'}`,
+                            background: selected ? '#075e54' : '#fff',
+                            color: selected ? '#fff' : '#333',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {category}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button type="submit" style={btnStyle('#075e54')}>Create Trader</button>
                   <button type="button" onClick={() => setShowNewTraderForm(false)} style={btnStyle('#666')}>Cancel</button>
@@ -692,6 +731,33 @@ export default function AdminDashboard() {
                               placeholder="Store Banner Image URL"
                               style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
                             />
+                            <div>
+                              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#111827', marginBottom: '4px' }}>Store Categories</div>
+                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                {PRODUCT_CATEGORY_OPTIONS.map((category) => {
+                                  const selected = traderDraft.storeCategories?.includes(category);
+                                  return (
+                                    <button
+                                      key={category}
+                                      type="button"
+                                      onClick={() => toggleTraderCategory(category, setTraderDraft)}
+                                      style={{
+                                        padding: '6px 8px',
+                                        borderRadius: 999,
+                                        border: `1px solid ${selected ? '#075e54' : '#d1d5db'}`,
+                                        background: selected ? '#075e54' : '#fff',
+                                        color: selected ? '#fff' : '#333',
+                                        cursor: 'pointer',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      {category}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           </div>
                         ) : (
                           <div>
@@ -700,6 +766,13 @@ export default function AdminDashboard() {
                             <div style={{ marginTop: '6px' }}>
                               {t.isBlocked ? <span style={{ background: '#fdecea', color: '#c62828', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Blocked</span> : (t.isApproved === false ? <span style={{ background: '#fff8e1', color: '#f9a825', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Pending</span> : <span style={{ background: '#e8f5e9', color: '#1b5e20', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Approved</span>)}
                             </div>
+                            {(Array.isArray(t.storeCategories) && t.storeCategories.length > 0) && (
+                              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '6px' }}>
+                                {t.storeCategories.map((category) => (
+                                  <span key={`${t._id}-${category}`} style={{ background: '#eff6ff', color: '#1d4ed8', padding: '2px 6px', borderRadius: '999px', fontSize: '0.68rem' }}>{category}</span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </td>
@@ -828,6 +901,15 @@ export default function AdminDashboard() {
                   required
                   style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
                 />
+                <select
+                  value={newProductForm.category}
+                  onChange={(e) => setNewProductForm(prev => ({ ...prev, category: e.target.value }))}
+                  style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                >
+                  {PRODUCT_CATEGORY_OPTIONS.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
                 <input
                   type="file"
                   accept="image/*"
@@ -868,6 +950,15 @@ export default function AdminDashboard() {
                               onChange={(e) => setProductDraft(prev => ({ ...prev, name: e.target.value }))}
                               style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
                             />
+                            <select
+                              value={productDraft.category}
+                              onChange={(e) => setProductDraft(prev => ({ ...prev, category: e.target.value }))}
+                              style={{ padding: '6px', borderRadius: '6px', border: '1px solid #ccc' }}
+                            >
+                              {PRODUCT_CATEGORY_OPTIONS.map((category) => (
+                                <option key={category} value={category}>{category}</option>
+                              ))}
+                            </select>
                             <input
                               type="file"
                               accept="image/*"
@@ -906,6 +997,7 @@ export default function AdminDashboard() {
                             </div>
                             <div style={{ marginTop: '6px' }}>
                               {p.isFeatured && <span style={{ background: '#fffbe6', color: '#fadb14', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', marginRight: '5px' }}>⭐ Featured</span>}
+                              <span style={{ background: '#eff6ff', color: '#1d4ed8', padding: '2px 6px', borderRadius: '999px', fontSize: '0.7rem', marginRight: '5px' }}>{p.category || 'General'}</span>
                               {p.isApproved === false ? <span style={{ background: '#fff8e1', color: '#f9a825', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Pending Approval</span> : <span style={{ background: '#e8f5e9', color: '#1b5e20', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>Approved</span>}
                             </div>
                           </div>

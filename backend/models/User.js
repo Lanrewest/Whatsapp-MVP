@@ -25,6 +25,7 @@ const UserSchema = new mongoose.Schema(
     pendingTier: { type: String },
     verificationReceiptUrl: { type: String },
     storeBannerUrl: { type: String, default: "" },
+    storeCategories: [{ type: String, trim: true }],
   },
   { timestamps: true },
 );

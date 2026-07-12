@@ -8,6 +8,18 @@ const cloudinary = require("cloudinary").v2;
 
 const { slugify } = require("../utils");
 
+const normalizeCategoryList = (value) => {
+  const rawList = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(",")
+      : [];
+
+  return [
+    ...new Set(rawList.map((item) => String(item).trim()).filter(Boolean)),
+  ];
+};
+
 // Get Admin Stats
 router.get("/stats", async (req, res) => {
   try {
@@ -215,7 +227,7 @@ router.post("/upload-images", async (req, res) => {
 // Create Trader (Admin)
 router.post("/traders", async (req, res) => {
   try {
-    const { phone, companyName, address } = req.body;
+    const { phone, companyName, address, storeCategories } = req.body;
     if (!phone || !companyName)
       return res
         .status(400)
@@ -238,6 +250,7 @@ router.post("/traders", async (req, res) => {
       companyName,
       address,
       slug,
+      storeCategories: normalizeCategoryList(storeCategories),
       isApproved: true,
       isBlocked: false,
       state: "idle",
@@ -251,7 +264,8 @@ router.post("/traders", async (req, res) => {
 // Create Product (Admin)
 router.post("/products", async (req, res) => {
   try {
-    const { name, price, traderPhone, imageUrl, imageUrls } = req.body;
+    const { name, price, traderPhone, imageUrl, imageUrls, category } =
+      req.body;
     if (!name || !price || !traderPhone)
       return res
         .status(400)
@@ -269,6 +283,7 @@ router.post("/products", async (req, res) => {
       price: Number(price),
       traderPhone: trader.phone,
       traderSlug: trader.slug,
+      category: String(category || "General").trim() || "General",
       imageUrl:
         imageUrl || (imageUrls && imageUrls.length > 0 ? imageUrls[0] : ""),
       imageUrls: imageUrls || [],
@@ -283,8 +298,14 @@ router.post("/products", async (req, res) => {
 // Update Trader info (Admin)
 router.patch("/traders/:id", async (req, res) => {
   try {
-    const { companyName, address, isApproved, isBlocked, storeBannerUrl } =
-      req.body;
+    const {
+      companyName,
+      address,
+      isApproved,
+      isBlocked,
+      storeBannerUrl,
+      storeCategories,
+    } = req.body;
     const updates = {
       companyName,
       address,
@@ -292,6 +313,9 @@ router.patch("/traders/:id", async (req, res) => {
       isBlocked,
       storeBannerUrl,
     };
+    if (storeCategories !== undefined) {
+      updates.storeCategories = normalizeCategoryList(storeCategories);
+    }
     Object.keys(updates).forEach(
       (key) => updates[key] === undefined && delete updates[key],
     );
@@ -309,8 +333,8 @@ router.patch("/traders/:id", async (req, res) => {
 // Update Product (Admin)
 router.patch("/products/:id", async (req, res) => {
   try {
-    const { name, price, imageUrl, imageUrls, isApproved } = req.body;
-    const updates = { name, price, imageUrl, imageUrls, isApproved };
+    const { name, price, imageUrl, imageUrls, isApproved, category } = req.body;
+    const updates = { name, price, imageUrl, imageUrls, isApproved, category };
     Object.keys(updates).forEach(
       (key) => updates[key] === undefined && delete updates[key],
     );

@@ -22,6 +22,7 @@ export default function Store() {
   const [fetchError, setFetchError] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [zoomedImage, setZoomedImage] = useState(null);
+  const [isCompactScreen, setIsCompactScreen] = useState(false);
   const selectedProductImage = selectedProduct?.imageUrl || selectedProduct?.imageUrls?.[0] || "";
 
   const [showFeedback, setShowFeedback] = useState(false);
@@ -59,6 +60,16 @@ export default function Store() {
     setSelectedProduct(null);
     document.getElementById("checkout-form")?.scrollIntoView({ behavior: "smooth" });
   };
+
+  useEffect(() => {
+    const updateViewportState = () => {
+      setIsCompactScreen(window.innerWidth < 768);
+    };
+
+    updateViewportState();
+    window.addEventListener("resize", updateViewportState);
+    return () => window.removeEventListener("resize", updateViewportState);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -169,8 +180,8 @@ export default function Store() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f7f7f7", padding: 16 }}>
-      <div style={{ maxWidth: 980, margin: "0 auto" }}>
+    <div style={{ minHeight: "100vh", background: "#f7f7f7", padding: 16, boxSizing: "border-box" }}>
+      <div style={{ maxWidth: 1080, width: "100%", margin: "0 auto" }}>
         <header style={{ textAlign: "center", marginBottom: 24 }}>
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '1rem' }}>
             <Logo width="275" height="55" />
@@ -179,7 +190,7 @@ export default function Store() {
             <>
             {trader.isPro && trader.storeBannerUrl && (
               <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', background: '#e0e0e0' }}>
-                <img src={trader.storeBannerUrl} alt={`${trader.companyName} banner`} style={{ width: '100%', height: '200px', objectFit: 'cover' }} />
+                <img src={trader.storeBannerUrl} alt={`${trader.companyName} banner`} style={{ width: '100%', height: isCompactScreen ? '140px' : '200px', objectFit: 'cover' }} />
               </div>
             )}
 
@@ -199,7 +210,7 @@ export default function Store() {
           )}
         </header>
         <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
             <h3 style={{ margin: 0 }}>Products</h3>
             <span style={{ color: '#666', fontSize: '0.9rem' }}>{products.length} item(s)</span>
           </div>
@@ -237,20 +248,20 @@ export default function Store() {
             Arewa Connect is not responsible for transactions, payments, or product quality. 
             Please deal directly with the trader responsibly.
           </p>
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12, width: '100%' }}>
             <input
               type="text"
               placeholder="Your Name"
               value={customerName}
               onChange={e => setCustomerName(e.target.value)}
               required
-              style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc" }}
+              style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc", width: '100%', boxSizing: 'border-box' }}
             />
             <textarea
               placeholder="Any extra instructions? (e.g. delivery time)"
               value={customerRequest}
               onChange={e => setCustomerRequest(e.target.value)}
-              style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc", minHeight: 60 }}
+              style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc", minHeight: 60, width: '100%', boxSizing: 'border-box' }}
             />
             <button 
               type="submit" 
@@ -512,6 +523,6 @@ const modalOverlay = {
 
 const modalContent = {
   background: '#fff', borderRadius: '16px', padding: '24px',
-  maxWidth: '450px', width: '100%', position: 'relative',
+  maxWidth: 'min(450px, calc(100vw - 24px))', width: '100%', position: 'relative',
   maxHeight: '90vh', overflowY: 'auto', textAlign: 'center'
 };
