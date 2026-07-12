@@ -177,12 +177,12 @@ export default function GeneralStore() {
   return (
     <div style={{ minHeight: "100vh", background: "#f7f7f7", padding: 16, boxSizing: "border-box" }}>
       <div style={{ maxWidth: 1180, width: "100%", margin: "0 auto" }}>
-        <header style={{ textAlign: "center", marginBottom: 24 }}>
+        <header style={{ textAlign: "center", marginBottom: 24, background: 'linear-gradient(135deg, #ffffff 0%, #f7fbf8 100%)', borderRadius: 20, border: '1px solid #dbe7de', boxShadow: '0 14px 34px rgba(15, 23, 42, 0.06)', padding: '20px 16px' }}>
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '1rem' }}>
             <Logo width="300" height="60" />
           </Link>
-          <h2 style={{ color: "#333", fontSize: "1.5rem", margin: "0 0 4px" }}>General Store Catalog</h2>
-          <p style={{ color: "#666", margin: 0 }}>Browse products from all traders.</p>
+          <h2 style={{ color: "#333", fontSize: "1.75rem", margin: "0 0 6px" }}>General Store Catalog</h2>
+          <p style={{ color: "#666", margin: 0, fontSize: '0.95rem' }}>Browse premium products from verified traders.</p>
         </header>
 
         <section style={{ marginBottom: 18, padding: '10px 12px', background: '#fff9e6', borderLeft: '4px solid #ffc107', borderRadius: '4px' }}>
@@ -195,7 +195,7 @@ export default function GeneralStore() {
         </section>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
-          <h3 style={{ margin: 0 }}>Available Products</h3>
+          <h3 style={{ margin: 0, color: '#0f172a' }}>Available Products</h3>
           <button onClick={() => setShowFilters((prev) => !prev)} style={{ ...filterToggleStyle, width: isCompactScreen ? '100%' : 'auto' }}>
             {showFilters ? 'Hide filters' : `Filters${activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}`}
           </button>
@@ -203,13 +203,13 @@ export default function GeneralStore() {
 
         <section>
           <div style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10, flexDirection: isCompactScreen ? 'column' : 'row' }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10, flexDirection: isCompactScreen ? 'column' : 'row', background: 'rgba(255,255,255,0.8)', padding: 10, borderRadius: 14, border: '1px solid #e7efe9', boxShadow: '0 8px 20px rgba(15, 23, 42, 0.04)' }}>
               <input
                 type="text"
                 placeholder="Search products, traders, or locations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ flex: 1, minWidth: 0, width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ccc', boxSizing: 'border-box' }}
+                style={{ flex: 1, minWidth: 0, width: '100%', padding: 12, borderRadius: 10, border: '1px solid #cfe2d8', boxSizing: 'border-box', fontSize: '0.95rem', background: '#fff' }}
               />
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ ...controlStyle, width: isCompactScreen ? '100%' : 'auto' }}>
                 <option value="newest">Newest</option>
@@ -351,26 +351,29 @@ const controlStyle = {
   width: '100%',
   maxWidth: 220,
   padding: '10px',
-  borderRadius: 6,
-  border: '1px solid #ccc',
-  boxSizing: 'border-box'
+  borderRadius: 10,
+  border: '1px solid #cfe2d8',
+  boxSizing: 'border-box',
+  background: '#fff',
+  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
 };
 
 const filterPanelStyle = {
   background: 'linear-gradient(180deg, #ffffff 0%, #f6fff8 100%)',
-  borderRadius: 12,
+  borderRadius: 16,
   border: '1px solid #dbe7de',
-  boxShadow: '0 10px 25px rgba(15, 23, 42, 0.06)',
+  boxShadow: '0 12px 26px rgba(15, 23, 42, 0.06)',
   padding: 14,
 };
 
 const filterChipStyle = {
-  padding: '8px 10px',
+  padding: '9px 12px',
   borderRadius: 999,
   border: '1px solid #d1d5db',
   cursor: 'pointer',
   fontSize: '0.82rem',
-  fontWeight: 600,
+  fontWeight: 700,
+  boxShadow: '0 4px 10px rgba(15, 23, 42, 0.04)',
 };
 
 const filterToggleStyle = {
@@ -406,9 +409,9 @@ const toggleStyle = (active) => ({
 
 const cardStyle = {
   background: '#fff',
-  borderRadius: 14,
+  borderRadius: 16,
   border: '1px solid #ebf0ec',
-  boxShadow: '0 8px 18px rgba(15, 23, 42, 0.05)',
+  boxShadow: '0 12px 24px rgba(15, 23, 42, 0.05)',
   padding: 12,
   display: 'flex',
   flexDirection: 'column',
