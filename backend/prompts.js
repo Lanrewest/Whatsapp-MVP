@@ -19,7 +19,8 @@ const prompts = {
     viewStore: (slug) =>
       `You can view your store at:\n${process.env.FRONTEND_URL || "https://arewaconnect.com.ng"}/store/${slug}`,
     replyHi: "Reply Hi to start",
-    welcomeBack: (name) => `Welcome back, ${name}! What would you like to do?`,
+    welcomeBack: (name, tierLabel = "Free") =>
+      `Welcome back, ${name}! Current tier: ${tierLabel}. What would you like to do?`,
     // Re-ordered for better flow
     mainMenu:
       "1. Add Product\n2. Modify Product\n3. Delete Product\n4. View My Store\n5. Update Address\n6. Give Feedback\n7. Upgrade Account",
@@ -106,7 +107,8 @@ const prompts = {
     viewStore: (slug) =>
       `Zaku iya duba shagonku a:\n${process.env.FRONTEND_URL || "https://arewaconnect.com.ng"}/store/${slug}`,
     replyHi: "Amsa da Hi don farawa",
-    welcomeBack: (name) => `Barka da dawowa, ${name}! Me kake son yi?`,
+    welcomeBack: (name, tierLabel = "Free") =>
+      `Barka da dawowa, ${name}! Matsayin ku: ${tierLabel}. Me kake son yi?`,
     // Re-ordered for better flow
     mainMenu:
       "1. Ƙara Kaya\n2. Gyara Kaya\n3. Goge Kaya\n4. Duba Shagona\n5. Gyara Adireshi\n6. Ba da Rahoto/Shawara\n7. Haɓaka Asusu",

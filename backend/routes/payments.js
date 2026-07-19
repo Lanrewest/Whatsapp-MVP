@@ -10,6 +10,27 @@ const twilioClient = twilio(
   process.env.TWILIO_AUTH_TOKEN,
 );
 
+const normalizePhoneForLookup = (phone) => {
+  const digits = (phone || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("234")) return digits;
+  if (digits.startsWith("0")) return `234${digits.substring(1)}`;
+  return `234${digits}`;
+};
+
+const formatTwilioRecipient = (phone) => {
+  const normalized = normalizePhoneForLookup(phone);
+  if (!normalized) return null;
+  return `whatsapp:+${normalized}`;
+};
+
+const buildRenewalLink = () => {
+  const base = (
+    process.env.FRONTEND_URL || "https://arewaconnect.com.ng"
+  ).replace(/\/$/, "");
+  return `${base}/upgrade?plan=pro&renew=1`;
+};
+
 // Paystack Webhook: Automatically verify traders upon payment
 router.post("/webhook", async (req, res) => {
   const hash = crypto
@@ -61,17 +82,17 @@ router.post("/webhook", async (req, res) => {
       return res.sendStatus(200);
     }
 
+    const normalizedPhone = normalizePhoneForLookup(phone);
+
     try {
-      const user = await User.findOneAndUpdate(
-        { phone: { $regex: phone.replace(/^0/, "(0)?") } }, // More flexible regex
-        {
-          isVerified: true,
-          isPro: tier === "pro",
-          tier: tier, // Explicitly set the tier field
-          proExpiresAt: tier === "pro" ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null,
-        },
-        { new: true },
-      );
+      const user = await User.findOne({
+        $or: [
+          { phone: normalizedPhone },
+          { phone: `+${normalizedPhone}` },
+          { phone: `0${normalizedPhone.substring(3)}` },
+          { phone: `whatsapp:+${normalizedPhone}` },
+        ],
+      });
 
       if (!user) {
         console.error(
@@ -80,20 +101,36 @@ router.post("/webhook", async (req, res) => {
         return res.sendStatus(200);
       }
 
-      console.log(`✅ User ${phone} verified as ${tier} via Paystack payment.`);
+      user.isVerified = true;
+      user.isPro = tier === "pro";
+      user.subscriptionPlan = tier === "pro" ? "pro" : "verified";
+      user.subscriptionStatus = "active";
+      user.lastPaidAt = new Date();
+      user.pendingTier = null;
+      user.proExpiresAt =
+        tier === "pro" ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null;
+      await user.save();
+
+      console.log(
+        `✅ User ${normalizedPhone} verified as ${tier} via Paystack payment.`,
+      );
 
       const lang = user.language || "en";
       const tierLabel = tier === "pro" ? "Pro User" : "Verified Trader";
+      const renewalLink = buildRenewalLink();
       const successMsg =
         lang === "ha"
-          ? `An kammala biyan kuɗi! Yanzu kai ${tierLabel} ne a Arewa Connect ✅.`
-          : `Payment successful! You are now a ${tierLabel} on Arewa Connect ✅.`;
+          ? `An kammala biyan kuɗi! Yanzu kai ${tierLabel} ne a Arewa Connect ✅.\n\nDon sabunta biyan kuɗi a kowane lokaci, ziyarci: ${renewalLink}`
+          : `Payment successful! You are now a ${tierLabel} on Arewa Connect ✅.\n\nRenew anytime here: ${renewalLink}`;
 
-      await twilioClient.messages.create({
-        from: process.env.TWILIO_WHATSAPP_NUMBER,
-        to: `whatsapp:${user.phone}`, // Use the canonical phone from the DB
-        body: successMsg,
-      });
+      const recipient = formatTwilioRecipient(user.phone);
+      if (recipient) {
+        await twilioClient.messages.create({
+          from: process.env.TWILIO_WHATSAPP_NUMBER,
+          to: recipient,
+          body: successMsg,
+        });
+      }
     } catch (err) {
       console.error("Webhook User Update Error:", err);
     }

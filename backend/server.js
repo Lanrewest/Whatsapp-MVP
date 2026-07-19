@@ -48,6 +48,9 @@ const webhook = require("./routes/webhook");
 const apiRoutes = require("./routes/api");
 const adminRoutes = require("./routes/admin");
 const paymentsRoutes = require("./routes/payments"); // Import the new payments router
+const {
+  runSubscriptionReminderCycle,
+} = require("./services/subscriptionReminder");
 
 const app = express();
 app.use(
@@ -146,4 +149,12 @@ const HTTP_PORT = process.env.PORT || 5000;
 app.listen(HTTP_PORT, () => {
   console.log(`🚀 Server live in ${process.env.NODE_ENV || "production"} mode`);
   console.log(`📡 Listening on port ${HTTP_PORT}`);
+
+  // Run the renewal reminder cycle every 6 hours.
+  setInterval(
+    () => {
+      runSubscriptionReminderCycle();
+    },
+    6 * 60 * 60 * 1000,
+  );
 });

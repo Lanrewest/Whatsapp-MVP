@@ -22,6 +22,16 @@ function slugify(text) {
     .replace(/^-+|-+$/g, ""); // Trim - from start/end
 }
 
+function getTierLabel(user, lang = "en") {
+  if (user.isPro) {
+    return lang === "ha" ? "Pro" : "Pro";
+  }
+  if (user.isVerified) {
+    return lang === "ha" ? "Verified" : "Verified";
+  }
+  return lang === "ha" ? "Free" : "Free";
+}
+
 // Configure Cloudinary using the URL from environment variables
 cloudinary.config(); // Automatically picks up CLOUDINARY_URL from process.env
 
@@ -184,7 +194,10 @@ router.post("/", async (req, res) => {
         await user.save();
         let mainMenu = t.mainMenu;
         if (user.isPro) mainMenu += "\n8. Pro Features 💎";
-        twiml.message(`${t.welcomeBack(user.companyName)}\n${mainMenu}`);
+        const tierLabel = getTierLabel(user, lang);
+        twiml.message(
+          `${t.welcomeBack(user.companyName, tierLabel)}\n${mainMenu}`,
+        );
         console.log(`✅ Response sent: Welcome back to ${user.phone}`);
         return res.type("text/xml").send(twiml.toString());
       }
@@ -265,7 +278,7 @@ router.post("/", async (req, res) => {
         await user.save();
         twiml.message(
           user.companyName
-            ? `${prompts[user.language].welcomeBack(user.companyName)}\n${
+            ? `${prompts[user.language].welcomeBack(user.companyName, getTierLabel(user, user.language))}\n${
                 prompts[user.language].mainMenu
               }${user.isPro ? "\n8. Pro Features 💎" : ""}`
             : prompts[user.language].askCompany,
@@ -280,8 +293,11 @@ router.post("/", async (req, res) => {
           await user.save();
           let mainMenu = t.mainMenu;
           if (user.isPro) mainMenu += "\n8. Pro Features 💎";
+          const tierLabel = getTierLabel(user, user.language || "en");
 
-          twiml.message(t.welcomeBack(user.companyName) + "\n" + mainMenu);
+          twiml.message(
+            t.welcomeBack(user.companyName, tierLabel) + "\n" + mainMenu,
+          );
           return res.type("text/xml").send(twiml.toString());
         }
 
