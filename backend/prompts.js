@@ -46,7 +46,7 @@ const prompts = {
       "Select Upgrade Type:\n1. Verified Badge (₦2,000 Monthly - 50 msgs/day)\n2. Pro Subscription (₦3,000 Monthly - 200 msgs/day + Pro Features)",
     askPaymentMethod:
       "How would you like to pay for your badge?\n1. Pay Online (Instant ✅)\n2. Bank Transfer (Manual 🏦)",
-    bankDetails: `Please transfer the required amount to:\n\n*Bank:* ${process.env.BANK_NAME || "Zenith Bank"}\n*Account:* ${process.env.BANK_ACCOUNT_NUMBER || "1234567890"}\n*Name:* ${process.env.BANK_ACCOUNT_NAME || "Arewa Connect"}\n\nAfter payment, please send a *screenshot of the receipt* here.`,
+    bankDetails: `Please transfer the required amount to:\n\n*Bank:* ${process.env.BANK_NAME || "OPAY"}\n*Account:* ${process.env.BANK_ACCOUNT_NUMBER || "6558777325"}\n*Name:* ${process.env.BANK_ACCOUNT_NAME || "Arewa Connect"}\n\nAfter payment, please send a *screenshot of the receipt* here.`,
     receiptReceived:
       "🙏 Thank you! Your receipt has been received. Our team will verify it and update your badge shortly.",
     sendReceiptOnly: "Please send a photo/screenshot of your payment receipt.",
@@ -130,7 +130,7 @@ const prompts = {
       "Zaɓi nau'in haɓakawa:\n1. Verified Badge (₦2,000 Duk wata - Sakonni 50)\n2. Pro Subscription (₦3,000 Duk wata - Sakonni 200 + Ayyukan Pro)",
     askPaymentMethod:
       "Yaya kake son biya?\n1. Biya ta Online (Nan take ✅)\n2. Canja wurin kudi ta Banki (Manual 🏦)",
-    bankDetails: `Da fatan za a tura kudin da ake bukata zuwa:\n\n*Bank:* ${process.env.BANK_NAME || "Zenith Bank"}\n*Account:* ${process.env.BANK_ACCOUNT_NUMBER || "1234567890"}\n*Sunan:* ${process.env.BANK_ACCOUNT_NAME || "Arewa Connect"}\n\nBayan kayi biya, turo hoton shaidar biyan ka (receipt) a nan.`,
+    bankDetails: `Da fatan za a tura kudin da ake bukata zuwa:\n\n*Bank:* ${process.env.BANK_NAME || "OPAY"}\n*Account:* ${process.env.BANK_ACCOUNT_NUMBER || "6558777325"}\n*Sunan:* ${process.env.BANK_ACCOUNT_NAME || "Arewaconect Enterprise"}\n\nBayan kayi biya, turo hoton shaidar biyan ka (receipt) a nan.`,
     receiptReceived:
       "🙏 Mun gode! Mun karbi hoton shaidar biyan ku. Za mu duba sannan mu inganta asusun ku nan ba da jimawa ba.",
     sendReceiptOnly: "Da fatan za a turo hoton shaidar biyan ku.",
