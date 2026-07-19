@@ -46,7 +46,7 @@ const prompts = {
       "Select Upgrade Type:\n1. Verified Badge (₦2,000 Monthly - 50 msgs/day)\n2. Pro Subscription (₦3,000 Monthly - 200 msgs/day + Pro Features)",
     askPaymentMethod:
       "How would you like to pay for your badge?\n1. Pay Online (Instant ✅)\n2. Bank Transfer (Manual 🏦)",
-    bankDetails: `Please transfer the required amount to:\n\n*Bank:* ${process.env.BANK_NAME || "OPAY"}\n*Account:* ${process.env.BANK_ACCOUNT_NUMBER || "6558777325"}\n*Name:* ${process.env.BANK_ACCOUNT_NAME || "Arewa Connect"}\n\nAfter payment, please send a *screenshot of the receipt* here.`,
+    bankDetails: `Please transfer the required amount to:\n\n*Bank:* ${process.env.BANK_NAME || "OPAY"}\n*Account:* ${process.env.BANK_ACCOUNT_NUMBER || "6558777325"}\n*Name:* ${process.env.BANK_ACCOUNT_NAME || "AREWACONNECT ENTERPRISE"}\n\nAfter payment, please send a *screenshot of the receipt* here.`,
     receiptReceived:
       "🙏 Thank you! Your receipt has been received. Our team will verify it and update your badge shortly.",
     sendReceiptOnly: "Please send a photo/screenshot of your payment receipt.",
