@@ -25,6 +25,13 @@ function slugify(text) {
 // Configure Cloudinary using the URL from environment variables
 cloudinary.config(); // Automatically picks up CLOUDINARY_URL from process.env
 
+router.get("/", (req, res) => {
+  res.status(200).json({
+    ok: true,
+    message: "Webhook endpoint is ready for POST requests from Twilio.",
+  });
+});
+
 // Helper function to securely download from Twilio and upload to Cloudinary
 async function uploadTwilioMediaToCloudinary(mediaUrl, cloudinaryFolder) {
   try {

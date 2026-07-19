@@ -112,6 +112,15 @@ app.get("/", (req, res) => {
   res.send("Arewa Connect Backend Server is running!");
 });
 
+// Health check route for Render / uptime monitors
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: "arewa-market",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Public/Browser-facing routes that need CORS
 const corsOptions = {
   origin: (origin, callback) => {
