@@ -181,7 +181,7 @@ export default function Store() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#f7f7f7", padding: 16, boxSizing: "border-box" }}>
-      <div style={{ maxWidth: 1080, width: "100%", margin: "0 auto" }}>
+      <main style={{ maxWidth: 1080, width: "100%", margin: "0 auto" }}>
         <header style={{ textAlign: "center", marginBottom: 24 }}>
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-block', marginBottom: '1rem' }}>
             <Logo width="275" height="55" />
@@ -190,7 +190,13 @@ export default function Store() {
             <>
             {trader.isPro && trader.storeBannerUrl && (
               <div style={{ marginBottom: '1.5rem', borderRadius: '12px', overflow: 'hidden', background: '#e0e0e0' }}>
-                <img src={trader.storeBannerUrl} alt={`${trader.companyName} banner`} style={{ width: '100%', height: isCompactScreen ? '140px' : '200px', objectFit: 'cover' }} />
+                <img
+                  src={optimizeCloudinaryUrl(trader.storeBannerUrl, { width: isCompactScreen ? 600 : 1200 })}
+                  alt={`${trader.companyName} banner`}
+                  loading="lazy"
+                  decoding="async"
+                  style={{ width: '100%', height: isCompactScreen ? '140px' : '200px', objectFit: 'cover' }}
+                />
               </div>
             )}
 
@@ -249,7 +255,9 @@ export default function Store() {
             Please deal directly with the trader responsibly.
           </p>
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12, width: '100%' }}>
+            <label htmlFor="customerName" style={{ color: '#333', fontSize: '0.95rem', fontWeight: 600 }}>Your Name</label>
             <input
+              id="customerName"
               type="text"
               placeholder="Your Name"
               value={customerName}
@@ -257,7 +265,9 @@ export default function Store() {
               required
               style={{ padding: 10, borderRadius: 6, border: "1px solid #ccc", width: '100%', boxSizing: 'border-box' }}
             />
+            <label htmlFor="customerRequest" style={{ color: '#333', fontSize: '0.95rem', fontWeight: 600 }}>Any extra instructions?</label>
             <textarea
+              id="customerRequest"
               placeholder="Any extra instructions? (e.g. delivery time)"
               value={customerRequest}
               onChange={e => setCustomerRequest(e.target.value)}
@@ -283,6 +293,7 @@ export default function Store() {
                 <button 
                   key={num} 
                   onClick={() => setRating(num)} 
+                  aria-label={`Rate ${num} star${num === 1 ? '' : 's'}`}
                   style={{ padding: '8px 12px', borderRadius: '50%', border: '1px solid #ccc', background: rating >= num ? '#ffc107' : '#fff', cursor: 'pointer' }}
                 >
                   {num}
@@ -298,8 +309,7 @@ export default function Store() {
             <button onClick={submitFeedback} style={{ ...btnAdd, width: '100%', padding: '10px' }}>Submit Feedback</button>
           </section>
         )}
-      </div>
-
+      </main>
       {/* Product Details Modal */}
       {selectedProduct && (
         <div style={modalOverlay}>
@@ -310,11 +320,13 @@ export default function Store() {
               <img 
                 src={optimizeCloudinaryUrl(selectedProductImage, { width: 700 })} 
                 alt={selectedProduct.name} 
-              style={{ 
-                width: '100%', maxHeight: '250px', objectFit: 'contain', borderRadius: '12px', marginBottom: '16px', 
-                background: '#f0f0f0', cursor: 'zoom-in'
-              }}
-              onClick={() => setZoomedImage(selectedProductImage)}
+                loading="lazy"
+                decoding="async"
+                style={{ 
+                  width: '100%', maxHeight: '250px', objectFit: 'contain', borderRadius: '12px', marginBottom: '16px', 
+                  background: '#f0f0f0', cursor: 'zoom-in'
+                }}
+                onClick={() => setZoomedImage(selectedProductImage)}
               />
             )}
             <div style={{ marginBottom: '20px', textAlign: 'left' }}>
@@ -345,6 +357,8 @@ export default function Store() {
           <img 
             src={zoomedImage} 
             alt="Zoomed product" 
+            loading="lazy"
+            decoding="async"
             style={{
               maxWidth: '90%',
               maxHeight: '90%',
@@ -400,6 +414,8 @@ function ProductCard({ product, onAddToCart, onRemoveFromCart, onShowDetails, ca
             <img 
               src={optimizeCloudinaryUrl(selectedImage, { width: 400 })} 
               alt={product.name} 
+              loading="lazy"
+              decoding="async"
               style={{ width: '100%', height: 176, objectFit: 'contain', borderRadius: 8, marginBottom: 8, background: '#f0f0f0', cursor: 'zoom-in' }} 
               onClick={() => setZoomedImage(selectedImage)}
             />
@@ -412,6 +428,8 @@ function ProductCard({ product, onAddToCart, onRemoveFromCart, onShowDetails, ca
                 key={`${product._id}-${index}`} 
                 src={optimizeCloudinaryUrl(img, { width: 100 })} 
                 alt={`${product.name} variation ${index + 1}`} 
+                loading="lazy"
+                decoding="async"
                 style={{ 
                   width: 50, height: 50, objectFit: 'contain', borderRadius: 6, 
                   border: selectedImage === img ? '2px solid #075e54' : '1px solid #ddd', 

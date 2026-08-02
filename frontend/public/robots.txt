@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+# Add a sitemap line if you create a sitemap.xml later
+# Sitemap: https://arewaconnect.com.ng/sitemap.xml
