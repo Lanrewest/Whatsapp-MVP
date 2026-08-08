@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import Logo from "../Logo";
 
 export default function ContactUs() {
-  const WHATSAPP_NUMBER = process.env.REACT_APP_TWILIO_NUMBER || "2348071821807";
+  const normalizeNumber = (value) => (value || "").replace(/\D/g, "");
+  const SUPPORT_WHATSAPP_NUMBER = normalizeNumber(process.env.REACT_APP_SUPPORT_NUMBER || "+2349040508117");
 
   return (
     <div style={{ padding: "40px 5%", maxWidth: "800px", margin: "0 auto", fontFamily: "sans-serif", color: "#333", textAlign: "center" }}>
@@ -18,7 +19,7 @@ export default function ContactUs() {
         </p>
         
         <a 
-          href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hello%20Arewa%20Connect%20Support`} 
+          href={`https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=Hello%20Arewa%20Connect%20Support`} 
           target="_blank" 
           rel="noopener noreferrer"
           style={{ 
