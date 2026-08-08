@@ -363,18 +363,11 @@ export default function LandingPage() {
         </section>
 
         <section style={{ ...styles.section, paddingTop: 0 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
             <div style={styles.testimonialCard}>
               <div style={{ fontSize: '1.6rem', marginBottom: 8 }}>“</div>
               <p style={{ margin: '0 0 16px', color: theme.textLight, lineHeight: 1.7 }}>This makes my business look more professional than ever. Customers understand my products instantly.</p>
               <div style={{ fontWeight: 700, color: theme.primary }}>AJS Textiles</div>
-            </div>
-            <div style={styles.showcaseCard}>
-              <div style={{ fontWeight: 800, fontSize: '1.05rem', marginBottom: 8 }}>Ready to make your business look premium?</div>
-              <div style={{ opacity: 0.95, lineHeight: 1.7, marginBottom: 16 }}>Launch your store today and start selling with confidence.</div>
-              <button onClick={handleGetStarted} style={{ ...styles.buttonPrimary, background: theme.white, color: theme.primary }}>
-                Create Your Store
-              </button>
             </div>
           </div>
         </section>
