@@ -208,16 +208,16 @@ router.post("/feedback", async (req, res) => {
   }
 });
 
-// Analytics Tracker (Placeholder)
+// Analytics Tracker
 router.post("/analytics/track", async (req, res) => {
   try {
-    const { page, slug } = req.query; // Assuming page and slug are passed as query parameters
+    const { page, slug } = req.query;
     if (!page) {
       return res.status(400).json({ error: "Missing 'page' parameter" });
     }
 
     const visitData = { page };
-    if (page === "store" && slug) {
+    if ((page === "store" || page === "product") && slug) {
       visitData.slug = slug;
     }
     await Visit.create(visitData);

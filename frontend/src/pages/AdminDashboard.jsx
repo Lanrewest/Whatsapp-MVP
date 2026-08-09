@@ -15,6 +15,8 @@ export default function AdminDashboard() {
     hourlyData: [],
     feedback: [],
     products: [],
+    topStores: [],
+    topProducts: [],
     daily: {
       traders: [],
       products: [],
@@ -56,6 +58,7 @@ export default function AdminDashboard() {
     trends: false,
     peakHours: false,
     engagement: false,
+    popularity: false,
     traders: false,
     products: false,
     feedback: false,
@@ -601,6 +604,48 @@ export default function AdminDashboard() {
             </div>
             </div>
           </>
+        )}
+      </div>
+
+      {/* Popularity Insights */}
+      <div style={collapsibleCardStyle}>
+        <div style={sectionHeaderStyle} onClick={() => toggleSection('popularity')}>
+          <h3 style={{ margin: 0 }}>🏆 Most Visited Stores & Products</h3>
+          <span>{collapsed.popularity ? '➕' : '➖'}</span>
+        </div>
+
+        {!collapsed.popularity && (
+          <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+            <div style={chartCardStyle}>
+              <h3>Top Stores</h3>
+              <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '-4px' }}>Most frequently visited storefronts</p>
+              {stats.topStores?.length ? (
+                stats.topStores.map((store, index) => (
+                  <div key={store._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: index < stats.topStores.length - 1 ? '1px solid #eee' : 'none' }}>
+                    <span style={{ fontWeight: 600 }}>{store.storeName}</span>
+                    <strong style={{ color: '#075e54' }}>{store.visits} visits</strong>
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: '#888' }}>No store visits yet.</p>
+              )}
+            </div>
+
+            <div style={chartCardStyle}>
+              <h3>Top Products</h3>
+              <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '-4px' }}>Most viewed product items</p>
+              {stats.topProducts?.length ? (
+                stats.topProducts.map((product, index) => (
+                  <div key={product._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: index < stats.topProducts.length - 1 ? '1px solid #eee' : 'none' }}>
+                    <span style={{ fontWeight: 600 }}>{product.productName}</span>
+                    <strong style={{ color: '#128c7e' }}>{product.visits} views</strong>
+                  </div>
+                ))
+              ) : (
+                <p style={{ color: '#888' }}>No product views yet.</p>
+              )}
+            </div>
+          </div>
         )}
       </div>
 

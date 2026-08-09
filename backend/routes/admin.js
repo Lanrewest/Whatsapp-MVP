@@ -72,6 +72,8 @@ router.get("/stats", async (req, res) => {
       products,
       trend7,
       trend30,
+      topStoreVisits,
+      topProductVisits,
     ] = await Promise.all([
       User.aggregate([
         { $group: { _id: "$tier", count: { $sum: 1 } } },
@@ -110,11 +112,43 @@ router.get("/stats", async (req, res) => {
         getDailyTrend(Visit, 30, { page: "landing" }),
         getDailyTrend(Visit, 30, { page: "store" }),
       ]),
+      Visit.aggregate([
+        { $match: { page: "store", slug: { $exists: true, $ne: "" } } },
+        { $group: { _id: "$slug", visits: { $sum: 1 } } },
+        { $sort: { visits: -1, _id: 1 } },
+        { $limit: 5 },
+      ]),
+      Visit.aggregate([
+        { $match: { page: "product", slug: { $exists: true, $ne: "" } } },
+        { $group: { _id: "$slug", visits: { $sum: 1 } } },
+        { $sort: { visits: -1, _id: 1 } },
+        { $limit: 5 },
+      ]),
     ]);
 
     const tierMap = tierStats.reduce(
       (acc, { tier, count }) => ({ ...acc, [tier]: count }),
       { basic: 0, verified: 0, pro: 0 },
+    );
+
+    const topStores = await User.find({
+      slug: { $in: topStoreVisits.map((item) => item._id).filter(Boolean) },
+    })
+      .select("slug companyName")
+      .lean();
+
+    const storeMap = Object.fromEntries(
+      topStores.map((store) => [store.slug, store]),
+    );
+
+    const topProducts = await Product.find({
+      _id: { $in: topProductVisits.map((item) => item._id).filter(Boolean) },
+    })
+      .select("_id name traderSlug")
+      .lean();
+
+    const productMap = Object.fromEntries(
+      topProducts.map((product) => [String(product._id), product]),
     );
 
     // Normalize product image data before sending to frontend
@@ -162,6 +196,17 @@ router.get("/stats", async (req, res) => {
           store: trend30[3],
         },
       },
+      topStores: topStoreVisits.map((item) => ({
+        _id: item._id,
+        visits: item.visits,
+        storeName: storeMap[item._id]?.companyName || item._id,
+      })),
+      topProducts: topProductVisits.map((item) => ({
+        _id: item._id,
+        visits: item.visits,
+        productName: productMap[item._id]?.name || item._id,
+        traderSlug: productMap[item._id]?.traderSlug || null,
+      })),
     });
   } catch (err) {
     console.error("Error fetching admin stats:", err);

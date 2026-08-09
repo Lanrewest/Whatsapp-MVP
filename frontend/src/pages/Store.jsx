@@ -88,6 +88,15 @@ export default function Store() {
     document.getElementById("checkout-form")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const trackProductView = async (product) => {
+    if (!product?._id) return;
+    try {
+      await fetch(`${API_BASE_URL}/api/analytics/track?page=product&slug=${product._id}`, { method: 'POST' });
+    } catch (err) {
+      console.warn("Product analytics failed", err);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!trader || cartItems.length === 0) return;
@@ -145,7 +154,7 @@ export default function Store() {
 
           {products.length === 0 ? <p style={{ color: '#888' }}>No products yet.</p> : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14 }}>
-              {products.map(p => <ProductCard key={p._id} product={p} onAddToCart={addToCart} onRemoveFromCart={removeFromCart} onShowDetails={setSelectedProduct} cartQty={cart[p._id]?.qty || 0} />)}
+              {products.map(p => <ProductCard key={p._id} product={p} onAddToCart={addToCart} onRemoveFromCart={removeFromCart} onShowDetails={setSelectedProduct} onTrackProductView={trackProductView} cartQty={cart[p._id]?.qty || 0} />)}
             </div>
           )}
         </section>
@@ -214,7 +223,7 @@ export default function Store() {
   );
 }
 
-function ProductCard({ product, onAddToCart, onRemoveFromCart, onShowDetails, cartQty }) {
+function ProductCard({ product, onAddToCart, onRemoveFromCart, onShowDetails, onTrackProductView, cartQty }) {
   const imageList = product.imageUrls && product.imageUrls.length ? product.imageUrls : product.imageUrl ? [product.imageUrl] : [];
   const [selectedImage, setSelectedImage] = useState(imageList[0] || '');
   const [zoomedImage, setZoomedImage] = useState(null);
@@ -243,7 +252,7 @@ function ProductCard({ product, onAddToCart, onRemoveFromCart, onShowDetails, ca
       {product.description && <p style={{ color: '#666', fontSize: '0.9rem' }}>{product.description}</p>}
 
       <div style={{ marginTop: 'auto', display: 'flex', gap: 8 }}>
-        <button onClick={() => onShowDetails(product)} style={btnDetails}>Details</button>
+        <button onClick={() => { onShowDetails(product); onTrackProductView?.(product); }} style={btnDetails}>Details</button>
         {cartQty > 0 ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button onClick={() => onRemoveFromCart(product._id)} style={btnSmall}>-</button>
