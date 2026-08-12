@@ -225,7 +225,7 @@ const styles = {
 export default function LandingPage() {
   const normalizeNumber = (value) => (value || "").replace(/\D/g, "");
   const BUSINESS_WHATSAPP_NUMBER = normalizeNumber(process.env.REACT_APP_TWILIO_NUMBER || "+14155238886");
-  const WHATSAPP_LINK = `https://wa.me/${BUSINESS_WHATSAPP_NUMBER}?text=Join`;
+  const WHATSAPP_LINK = `https://wa.me/${BUSINESS_WHATSAPP_NUMBER}?text=${encodeURIComponent("join themselves-game")}`;
 
   useEffect(() => {
     document.title = "Arewa Connect | Digital Storefronts for Northern Traders";
