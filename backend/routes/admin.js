@@ -6,7 +6,7 @@ const Feedback = require("../models/Feedback");
 const Visit = require("../models/Visit");
 const cloudinary = require("cloudinary").v2;
 
-const { slugify } = require("../utils");
+const { slugify, normalizePhoneForLookup } = require("../utils");
 
 const normalizeCategoryList = (value) => {
   const rawList = Array.isArray(value)
@@ -273,17 +273,35 @@ router.post("/upload-images", async (req, res) => {
 router.post("/traders", async (req, res) => {
   try {
     const { phone, companyName, address, storeCategories } = req.body;
-    if (!phone || !companyName)
+    const cleanPhone = String(phone || "").trim();
+    const cleanCompanyName = String(companyName || "").trim();
+
+    if (!cleanPhone || !cleanCompanyName) {
       return res
         .status(400)
         .json({ error: "Phone and company name are required" });
-    const normalizedPhone = phone.replace(/\D/g, "");
-    if (!normalizedPhone)
-      return res.status(400).json({ error: "Invalid phone number" });
-    if (await User.findOne({ phone: { $in: [phone, normalizedPhone] } }))
-      return res.status(409).json({ error: "Trader already exists" });
+    }
 
-    let baseSlug = slugify(companyName);
+    const normalizedPhone = normalizePhoneForLookup(cleanPhone);
+    if (!normalizedPhone) {
+      return res.status(400).json({ error: "Invalid phone number" });
+    }
+
+    const existingTrader = await User.findOne({
+      $or: [
+        { phone: cleanPhone },
+        { phone: normalizedPhone },
+        { phone: `+${normalizedPhone}` },
+        { phone: `0${normalizedPhone.substring(3)}` },
+        { phone: `whatsapp:+${normalizedPhone}` },
+      ],
+    });
+
+    if (existingTrader) {
+      return res.status(409).json({ error: "Trader already exists" });
+    }
+
+    let baseSlug = slugify(cleanCompanyName);
     let slug = baseSlug || `trader-${normalizedPhone}`;
     let counter = 1;
     while (await User.findOne({ slug })) {
@@ -291,8 +309,8 @@ router.post("/traders", async (req, res) => {
     }
 
     const user = await User.create({
-      phone,
-      companyName,
+      phone: normalizedPhone,
+      companyName: cleanCompanyName,
       address,
       slug,
       storeCategories: normalizeCategoryList(storeCategories),
@@ -302,6 +320,7 @@ router.post("/traders", async (req, res) => {
     });
     res.json({ success: true, user });
   } catch (err) {
+    console.error("Create trader error:", err);
     res.status(500).json({ error: "Failed to create trader" });
   }
 });
