@@ -37,7 +37,7 @@ export default function ContactUs() {
         </a>
 
         <div style={{ marginTop: "40px", color: "#666" }}>
-          <p><strong>Email:</strong> support@arewaconnect.com.ng</p>
+          <p><strong>Email:</strong> support.arewaconnect@gmail.com</p>
         </div>
       </div>
 
